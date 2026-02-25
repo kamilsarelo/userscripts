@@ -30,11 +30,17 @@
  *   - Speed text is clickable and cycles through presets
  *   - 16 speed presets: 0.1x to 32x
  *   - Speed persists globally across all pages
- * - Slim full-width progress bar
- *   - Click to seek
- *   - Hover shows timestamp tooltip
- *   - Buffered indicator
+ * - High-contrast progress bar
+ *   - Solid red fill for maximum visibility
+ *   - Expands from 4px to 14px on hover/touch for easier interaction
+ *   - Fixed-position hit area (14px transparent zone) prevents flickering
+ *   - Backdrop blur (10px) for frosted glass effect
+ *   - Desktop: hover to expand, click to seek
+ *   - Mobile: touch and drag to seek, release to confirm
+ *   - Timestamp tooltip follows touch/drag position
+ *   - Buffered indicator shows loading progress
  *   - Live stream support (shows "LIVE" badge)
+ *   - Shadow transitions with control bar visibility
  * - Hide controls with duration options: 5s, 15s, 30s, 1min, until media ends
  * - Responsive overflow: Hide button moves to kebab menu (⋮) when space is limited
  * - Shadow DOM isolation: No CSS conflicts with page styles
@@ -42,9 +48,9 @@
  * CONTROL BAR LAYOUT
  * ------------------
  * ┌──────────────────────────────────────────────────────────────────────────────┐
- * │  ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│ Progress
+ * │  ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ Progress
  * ├──────────────────────────────────────────────────────────────────────────────┤
- * │  [▶️]  [◀◀] [1.5x] [▶▶]  0:00 / 5:30  [👁️ Hide 5s ▼]  [⋮] (if overflow)   │
+ * │  [▶️]  [◀◀] [1.5x] [▶▶]  0:00 / 5:30  [👁️ Hide 5s ▼]  [⋮] (if overflow)     │
  * └──────────────────────────────────────────────────────────────────────────────┘
  * 
  * BUTTON PRIORITY (for responsive overflow)
@@ -75,6 +81,23 @@
  *   - No build process required
  * - Architecture: Single-file userscript with modular functions
  * - Storage: GM_setValue primary, localStorage fallback
+ * 
+ * PROGRESS BAR IMPLEMENTATION
+ * ---------------------------
+ * - High-contrast red fill for visibility against dark backgrounds
+ * - Fixed-position hit area (position: fixed) prevents layout shifts during expansion
+ * - CSS transitions for smooth height/opacity changes (0.15s ease)
+ * - Desktop detection: @media (hover: hover) and (pointer: fine)
+ * - Mobile touch handling:
+ *   - touchstart: expand progress bar, show tooltip immediately
+ *   - touchmove: update tooltip position during drag
+ *   - touchend: seek to position, collapse after 300ms delay
+ *   - contextmenu prevented to avoid long-press menu
+ * - Backdrop blur (10px) for frosted glass effect on control bar
+ * - Box-shadow transitions with visibility state (no shadow when hidden)
+ * - Touch optimizations:
+ *   - -webkit-tap-highlight-color: transparent (removes blue tap highlight)
+ *   - touch-action: none (prevents browser gesture interference)
  * 
  * HIDE DURATION OPTIONS
  * ---------------------
@@ -138,6 +161,7 @@
     let hideTimeout = null;
     let currentSpeed = 1;
     let overflowItems = [];
+    let isDragging = false; // Track if user is dragging to seek
 
     // DOM Elements
     let playPauseBtn = null;
@@ -203,44 +227,72 @@
             left: 0;
             width: 100%;
             z-index: 2147483647;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: white;
             font-size: 14px;
             transform: translateY(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             user-select: none;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0), 0 -2px 8px rgba(0, 0, 0, 0);
         }
         
         .control-bar.visible {
             transform: translateY(0);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .progress-hit-area {
+            position: fixed;
+            bottom: 54px; /* controls-wrapper height (~44px) + progress zone (14px) - controls-wrapper padding */
+            left: 0;
+            width: 100%;
+            height: 14px;
+            cursor: pointer;
+            z-index: 10;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
         }
         
         .progress-container {
             height: 4px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.1);
             cursor: pointer;
             position: relative;
+            transition: height 0.15s ease;
         }
         
-        .progress-container:hover {
-            height: 6px;
+        .progress-container.expanded {
+            height: 14px;
         }
         
         .progress-buffered {
             position: absolute;
             top: 0;
             left: 0;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.2);
+            width: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
             pointer-events: none;
+            transition: height 0.15s ease;
+        }
+        
+        .progress-container.expanded .progress-buffered {
+            height: 14px;
         }
         
         .progress-fill {
-            height: 100%;
-            background: #007bff;
-            transition: width 0.1s linear;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: #ff002d;
+            transition: height 0.15s ease, width 0.1s linear;
+        }
+        
+        .progress-container.expanded .progress-fill {
+            height: 14px;
         }
         
         .progress-tooltip {
@@ -259,7 +311,7 @@
             margin-bottom: 4px;
         }
         
-        .progress-container:hover .progress-tooltip {
+        .progress-container.expanded .progress-tooltip {
             opacity: 1;
         }
         
@@ -459,6 +511,10 @@
         // Controls wrapper
         const controlsWrapper = createElement('div', 'controls-wrapper');
         
+        // Progress hit area (fixed position, inside controls-wrapper for DOM organization)
+        const progressHitArea = createElement('div', 'progress-hit-area');
+        controlsWrapper.appendChild(progressHitArea);
+        
         // Play/Pause button
         playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' }, '▶️');
         controlsWrapper.appendChild(playPauseBtn);
@@ -520,11 +576,60 @@
         fasterBtn.addEventListener('click', () => changeSpeed(1));
         speedText.addEventListener('click', cycleSpeed);
 
-        // Progress bar
-        progressBar.addEventListener('click', handleSeek);
-        progressBar.addEventListener('mousemove', handleProgressHover);
-        progressBar.addEventListener('mouseleave', () => {
+        // Progress hit area - hover and click for desktop, drag-to-seek for mobile
+        const progressHitArea = shadowRoot.querySelector('.progress-hit-area');
+        
+        // Desktop mouse events - simple hover and click
+        progressHitArea.addEventListener('mouseenter', () => {
+            progressBar.classList.add('expanded');
+        });
+        
+        progressHitArea.addEventListener('mouseleave', () => {
+            progressBar.classList.remove('expanded');
             progressTooltip.style.opacity = '0';
+        });
+        
+        progressHitArea.addEventListener('mousemove', (e) => {
+            handleProgressHover(e);
+        });
+        
+        progressHitArea.addEventListener('click', handleSeek);
+        
+        // Touch events for mobile - drag to seek
+        progressHitArea.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            progressBar.classList.add('expanded');
+            progressTooltip.style.opacity = '1'; // Show immediately
+            handleTouchMove(e);
+        }, { passive: true });
+        
+        progressHitArea.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            handleTouchMove(e);
+        }, { passive: true });
+        
+        progressHitArea.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            // Seek to the touched position
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                const rect = progressBar.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                if (activeMedia && isFinite(activeMedia.duration)) {
+                    activeMedia.currentTime = percent * activeMedia.duration;
+                }
+            }
+            // Delay collapse slightly for visual feedback
+            setTimeout(() => {
+                progressBar.classList.remove('expanded');
+                progressTooltip.style.opacity = '0';
+            }, 300);
+        });
+        
+        // Prevent context menu on long press (mobile)
+        progressHitArea.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
         });
 
         // Hide controls
@@ -624,6 +729,18 @@
         progressTooltip.textContent = formatTime(time);
         progressTooltip.style.left = (percent * 100) + '%';
         progressTooltip.style.opacity = '1';
+    }
+    
+    function handleTouchMove(e) {
+        if (!activeMedia || !isFinite(activeMedia.duration)) return;
+        
+        const touch = e.touches[0];
+        const rect = progressBar.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+        const time = percent * activeMedia.duration;
+
+        progressTooltip.textContent = formatTime(time);
+        progressTooltip.style.left = (percent * 100) + '%';
     }
 
     // ==================== Progress Updates ====================
