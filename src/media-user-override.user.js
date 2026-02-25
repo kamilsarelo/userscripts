@@ -27,8 +27,8 @@
  * - No keyboard hotkeys (avoids conflicts with browser/site shortcuts)
  * - Play/Pause toggle button with dynamic icon
  * - Speed control combo: [Slower ◀◀] [Speed Text] [Faster ▶▶]
- *   - Speed text is clickable and cycles through presets
- *   - 16 speed presets: 0.1x to 32x
+ *   - Speed text opens dropdown menu with all speed presets
+ *   - Speed presets from 0.1x to 64x
  *   - Speed persists globally across all pages
  * - High-contrast progress bar
  *   - Solid red fill for maximum visibility
@@ -167,6 +167,7 @@
     let playPauseBtn = null;
     let slowerBtn = null;
     let speedText = null;
+    let speedSelect = null;
     let fasterBtn = null;
     let hideBtn = null;
     let hideSelect = null;
@@ -373,7 +374,47 @@
             border-color: rgba(0, 123, 255, 0.5);
         }
         
+        .speed-text-container {
+            position: relative;
+        }
+        
         .speed-text:hover {
+            background: rgba(0, 123, 255, 0.5);
+        }
+        
+        .speed-select {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 4px;
+            margin-bottom: 4px;
+            display: none;
+            min-width: 180px;
+        }
+        
+        .speed-select.visible {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+        
+        .speed-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            text-align: center;
+            border-radius: 4px;
+        }
+        
+        .speed-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .speed-option.active {
             background: rgba(0, 123, 255, 0.5);
         }
         
@@ -522,10 +563,21 @@
         // Speed combo
         const speedCombo = createElement('div', 'speed-combo');
         slowerBtn = createElement('button', 'btn speed-btn slower', { title: 'Slower' }, '⏪');
-        speedText = createElement('button', 'btn speed-text', { title: 'Click to cycle speed' }, '1.0x');
+        
+        // Speed text button with dropdown
+        const speedTextContainer = createElement('div', 'speed-text-container');
+        speedText = createElement('button', 'btn speed-text', { title: 'Select speed' }, '1.0x');
+        speedSelect = createElement('div', 'speed-select');
+        SPEEDS.forEach(s => {
+            const opt = createElement('div', 'speed-option', { 'data-value': s }, s + 'x');
+            speedSelect.appendChild(opt);
+        });
+        speedTextContainer.appendChild(speedText);
+        speedTextContainer.appendChild(speedSelect);
+        
         fasterBtn = createElement('button', 'btn speed-btn faster', { title: 'Faster' }, '⏩');
         speedCombo.appendChild(slowerBtn);
-        speedCombo.appendChild(speedText);
+        speedCombo.appendChild(speedTextContainer);
         speedCombo.appendChild(fasterBtn);
         controlsWrapper.appendChild(speedCombo);
         
@@ -574,7 +626,20 @@
         // Speed controls
         slowerBtn.addEventListener('click', () => changeSpeed(-1));
         fasterBtn.addEventListener('click', () => changeSpeed(1));
-        speedText.addEventListener('click', cycleSpeed);
+        speedText.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speedSelect.classList.toggle('visible');
+            updateSpeedOptions();
+        });
+        
+        // Speed dropdown options
+        speedSelect.querySelectorAll('.speed-option').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                const value = parseFloat(e.target.dataset.value);
+                setSpeed(value);
+                speedSelect.classList.remove('visible');
+            });
+        });
 
         // Progress hit area - hover and click for desktop, drag-to-seek for mobile
         const progressHitArea = shadowRoot.querySelector('.progress-hit-area');
@@ -658,6 +723,7 @@
             if (!e.target.closest('#media-user-override-bar')) {
                 hideSelect?.classList.remove('visible');
                 kebabMenu?.classList.remove('visible');
+                speedSelect?.classList.remove('visible');
             }
         });
 
@@ -693,22 +759,31 @@
             : Math.min(SPEEDS.length - 1, currentIndex + 1);
 
         if (newIndex >= 0 && newIndex < SPEEDS.length) {
-            activeMedia.playbackRate = SPEEDS[newIndex];
-            saveSpeed(activeMedia.playbackRate);
-            speedText.textContent = activeMedia.playbackRate + 'x';
+            setSpeed(SPEEDS[newIndex]);
         }
     }
 
-    function cycleSpeed() {
+    function setSpeed(speed) {
         if (!activeMedia) return;
-
-        let currentIndex = SPEEDS.indexOf(activeMedia.playbackRate);
-        if (currentIndex === -1) currentIndex = SPEEDS.indexOf(1);
         
-        const newIndex = (currentIndex + 1) % SPEEDS.length;
-        activeMedia.playbackRate = SPEEDS[newIndex];
-        saveSpeed(activeMedia.playbackRate);
-        speedText.textContent = activeMedia.playbackRate + 'x';
+        activeMedia.playbackRate = speed;
+        saveSpeed(speed);
+        speedText.textContent = speed + 'x';
+        updateSpeedOptions();
+    }
+    
+    function updateSpeedOptions() {
+        if (!speedSelect || !activeMedia) return;
+        
+        const currentRate = activeMedia.playbackRate;
+        speedSelect.querySelectorAll('.speed-option').forEach(opt => {
+            const value = parseFloat(opt.dataset.value);
+            if (value === currentRate) {
+                opt.classList.add('active');
+            } else {
+                opt.classList.remove('active');
+            }
+        });
     }
 
     function handleSeek(e) {
