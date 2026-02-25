@@ -106,7 +106,14 @@
 
     // Constants
     const STORAGE_KEY = 'media_user_override_speed';
-    const SPEEDS = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 4, 8, 16, 32];
+    // Filter speeds to only those supported by the browser (Chrome/Edge limit playbackRate to ~16x, Firefox allows 32x+)
+    const SPEEDS = (() => {
+        const m = document.createElement('video');
+        const all = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 4, 8, 16, 32, 64];
+        const supported = all.filter(s => { try { m.playbackRate = s; return true; } catch { return false; }});
+        m.remove();
+        return supported;
+    })();
     const HIDE_DURATIONS = [
         { value: 5, label: '5s' },
         { value: 15, label: '15s' },
