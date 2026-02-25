@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream Test - Media User Override</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .back { display: block; margin-bottom: 20px; }
+        video, audio { width: 100%; background: #000; margin-bottom: 20px; }
+        .note { background: #d4edda; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+        .section { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; }
+        .status { font-weight: bold; margin-top: 10px; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #007bff; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <a class="back" href="/">← Back to Home</a>
+    <h1>Live Stream Test</h1>
+    <p class="note">
+        Live streams have <code>duration = Infinity</code>. The control bar should show a "LIVE" badge 
+        instead of a progress bar. Time display should show "LIVE" instead of timestamps.
+    </p>
+    
+    <div class="section">
+        <h3>1. Canvas Live Stream (Simulated)</h3>
+        <p>Generates a live video stream from canvas animation. Duration will be Infinity.</p>
+        <video id="canvasStream" controls autoplay muted></video>
+        <button onclick="startCanvasStream()">Start Canvas Stream</button>
+        <button onclick="stopCanvasStream()">Stop Canvas Stream</button>
+        <div id="canvasStatus" class="status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>2. Webcam Live Stream</h3>
+        <p>Uses your webcam as a live stream source. Duration will be Infinity.</p>
+        <video id="webcamStream" controls autoplay muted></video>
+        <button onclick="startWebcam()">Start Webcam</button>
+        <button onclick="stopWebcam()">Stop Webcam</button>
+        <div id="webcamStatus" class="status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>3. Audio Live Stream (Oscillator)</h3>
+        <p>Generates a live audio stream from Web Audio API. Duration will be Infinity.</p>
+        <audio id="audioStream" controls></audio>
+        <button onclick="startAudioStream()">Start Audio Stream</button>
+        <button onclick="stopAudioStream()">Stop Audio Stream</button>
+        <div id="audioStatus" class="status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>4. Combined A/V Live Stream</h3>
+        <p>Combines canvas video + audio oscillator into a single live stream.</p>
+        <video id="combinedStream" controls autoplay muted></video>
+        <button onclick="startCombinedStream()">Start Combined Stream</button>
+        <button onclick="stopCombinedStream()">Stop Combined Stream</button>
+        <div id="combinedStatus" class="status"></div>
+    </div>
+
+    <canvas id="hiddenCanvas" width="640" height="360"></canvas>
+
+    <script>
+        // Canvas stream
+        let canvasAnimationId = null;
+        let canvasStream = null;
+        
+        function startCanvasStream() {
+            const canvas = document.getElementById('hiddenCanvas');
+            const ctx = canvas.getContext('2d');
+            const video = document.getElementById('canvasStream');
+            
+            // Create stream from canvas
+            canvasStream = canvas.captureStream(30);
+            video.srcObject = canvasStream;
+            
+            // Animation
+            let frame = 0;
+            let startTime = Date.now();
+            
+            function draw() {
+                const elapsed = (Date.now() - startTime) / 1000;
+                
+                // Background gradient
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, `hsl(${(frame * 2) % 360}, 70%, 30%)`);
+                gradient.addColorStop(1, `hsl(${(frame * 2 + 180) % 360}, 70%, 20%)`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Animated circles
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    const x = canvas.width/2 + Math.cos(elapsed + i * 1.2) * 100;
+                    const y = canvas.height/2 + Math.sin(elapsed * 1.5 + i * 1.2) * 80;
+                    ctx.arc(x, y, 20 + i * 10, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${(i * 60 + frame) % 360}, 80%, 60%, 0.7)`;
+                    ctx.fill();
+                }
+                
+                // Text overlay
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('LIVE CANVAS STREAM', canvas.width/2, 40);
+                ctx.font = '18px monospace';
+                ctx.fillText(`Time: ${elapsed.toFixed(1)}s`, canvas.width/2, canvas.height - 20);
+                ctx.fillText(`Duration: ${video.duration === Infinity ? 'Infinity (LIVE)' : video.duration}`, canvas.width/2, canvas.height - 50);
+                
+                frame++;
+                canvasAnimationId = requestAnimationFrame(draw);
+            }
+            
+            draw();
+            video.play();
+            
+            updateStatus('canvasStatus', `Stream started. Duration: ${video.duration}`, 'success');
+            
+            // Update status when duration is known
+            video.onloadedmetadata = () => {
+                updateStatus('canvasStatus', `Stream active. Duration: ${video.duration === Infinity ? 'Infinity (LIVE)' : video.duration}`, 'success');
+            };
+        }
+        
+        function stopCanvasStream() {
+            if (canvasAnimationId) {
+                cancelAnimationFrame(canvasAnimationId);
+                canvasAnimationId = null;
+            }
+            const video = document.getElementById('canvasStream');
+            if (canvasStream) {
+                canvasStream.getTracks().forEach(track => track.stop());
+                canvasStream = null;
+            }
+            video.srcObject = null;
+            updateStatus('canvasStatus', 'Stream stopped', 'info');
+        }
+        
+        // Webcam stream
+        let webcamStream = null;
+        
+        async function startWebcam() {
+            try {
+                const video = document.getElementById('webcamStream');
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 }, 
+                    audio: false 
+                });
+                video.srcObject = webcamStream;
+                video.play();
+                
+                video.onloadedmetadata = () => {
+                    updateStatus('webcamStatus', `Webcam active. Duration: ${video.duration === Infinity ? 'Infinity (LIVE)' : video.duration}`, 'success');
+                };
+            } catch (err) {
+                updateStatus('webcamStatus', `Error: ${err.message}`, 'error');
+            }
+        }
+        
+        function stopWebcam() {
+            const video = document.getElementById('webcamStream');
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            video.srcObject = null;
+            updateStatus('webcamStatus', 'Webcam stopped', 'info');
+        }
+        
+        // Audio stream
+        let audioContext = null;
+        let oscillator = null;
+        let audioStreamDestination = null;
+        let audioMediaStream = null;
+        
+        function startAudioStream() {
+            const audio = document.getElementById('audioStream');
+            
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            audioStreamDestination = audioContext.createMediaStreamDestination();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioStreamDestination);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            
+            audioMediaStream = audioStreamDestination.stream;
+            audio.srcObject = audioMediaStream;
+            audio.play();
+            
+            audio.onloadedmetadata = () => {
+                updateStatus('audioStatus', `Audio stream active. Duration: ${audio.duration === Infinity ? 'Infinity (LIVE)' : audio.duration}`, 'success');
+            };
+        }
+        
+        function stopAudioStream() {
+            const audio = document.getElementById('audioStream');
+            if (oscillator) {
+                oscillator.stop();
+                oscillator = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            if (audioMediaStream) {
+                audioMediaStream.getTracks().forEach(track => track.stop());
+                audioMediaStream = null;
+            }
+            audio.srcObject = null;
+            updateStatus('audioStatus', 'Audio stream stopped', 'info');
+        }
+        
+        // Combined stream
+        let combinedCtx = null;
+        let combinedAnimId = null;
+        let combinedAudioCtx = null;
+        let combinedOsc = null;
+        let combinedStream = null;
+        
+        function startCombinedStream() {
+            const canvas = document.getElementById('hiddenCanvas');
+            const ctx = canvas.getContext('2d');
+            const video = document.getElementById('combinedStream');
+            
+            // Video from canvas
+            const canvasVideoStream = canvas.captureStream(30);
+            
+            // Audio from oscillator
+            combinedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            combinedOsc = combinedAudioCtx.createOscillator();
+            const gainNode = combinedAudioCtx.createGain();
+            const audioDestination = combinedAudioCtx.createMediaStreamDestination();
+            
+            combinedOsc.type = 'triangle';
+            combinedOsc.frequency.setValueAtTime(220, combinedAudioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, combinedAudioCtx.currentTime);
+            
+            combinedOsc.connect(gainNode);
+            gainNode.connect(audioDestination);
+            gainNode.connect(combinedAudioCtx.destination);
+            combinedOsc.start();
+            
+            // Combine video and audio tracks
+            const audioTrack = audioDestination.stream.getAudioTracks()[0];
+            combinedStream = new MediaStream([
+                ...canvasVideoStream.getVideoTracks(),
+                audioTrack
+            ]);
+            
+            video.srcObject = combinedStream;
+            
+            // Animation
+            let frame = 0;
+            let startTime = Date.now();
+            
+            function draw() {
+                const elapsed = (Date.now() - startTime) / 1000;
+                
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Visualizer bars
+                const bars = 20;
+                const barWidth = canvas.width / bars;
+                for (let i = 0; i < bars; i++) {
+                    const height = Math.abs(Math.sin(elapsed * 3 + i * 0.5)) * 150 + 20;
+                    ctx.fillStyle = `hsl(${i * 18}, 80%, 50%)`;
+                    ctx.fillRect(i * barWidth + 5, canvas.height/2 - height/2, barWidth - 10, height);
+                }
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('COMBINED LIVE STREAM', canvas.width/2, 50);
+                ctx.font = '16px monospace';
+                ctx.fillText('Video + Audio', canvas.width/2, 80);
+                ctx.fillText(`Duration: ${video.duration === Infinity ? 'LIVE' : video.duration}`, canvas.width/2, canvas.height - 30);
+                
+                frame++;
+                combinedAnimId = requestAnimationFrame(draw);
+            }
+            
+            draw();
+            video.play();
+            
+            video.onloadedmetadata = () => {
+                updateStatus('combinedStatus', `Combined stream active. Duration: ${video.duration === Infinity ? 'Infinity (LIVE)' : video.duration}`, 'success');
+            };
+        }
+        
+        function stopCombinedStream() {
+            const video = document.getElementById('combinedStream');
+            
+            if (combinedAnimId) {
+                cancelAnimationFrame(combinedAnimId);
+                combinedAnimId = null;
+            }
+            if (combinedOsc) {
+                combinedOsc.stop();
+                combinedOsc = null;
+            }
+            if (combinedAudioCtx) {
+                combinedAudioCtx.close();
+                combinedAudioCtx = null;
+            }
+            if (combinedStream) {
+                combinedStream.getTracks().forEach(track => track.stop());
+                combinedStream = null;
+            }
+            video.srcObject = null;
+            updateStatus('combinedStatus', 'Combined stream stopped', 'info');
+        }
+        
+        // Helper
+        function updateStatus(id, message, type) {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.className = `status ${type}`;
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCanvasStream();
+            stopWebcam();
+            stopAudioStream();
+            stopCombinedStream();
+        });
+    </script>
+</body>
+</html>
