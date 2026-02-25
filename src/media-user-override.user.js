@@ -89,6 +89,8 @@
  * - Works on all websites (*://*\/*)
  * - Requires Violentmonkey, Tampermonkey, Greasemonkey, or similar
  * - Modern browsers with Shadow DOM support
+ * - Trusted Types compatible: Uses DOM methods instead of innerHTML
+ *   (required for sites like YouTube that enforce CSP Trusted Types)
  */
 
 (function () {
@@ -410,6 +412,15 @@
 
     // ==================== Control Bar Creation ====================
 
+    // Helper: create element with classes and attributes (Trusted Types safe)
+    function createElement(tag, classes = '', attrs = {}, textContent = '') {
+        const el = document.createElement(tag);
+        if (classes) el.className = classes;
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        if (textContent) el.textContent = textContent;
+        return el;
+    }
+
     function createControlBar() {
         // Only create control bar in top-level document
         if (!isTopLevel) return null;
@@ -419,53 +430,66 @@
         controlBar.id = 'media-user-override-bar';
         shadowRoot = controlBar.attachShadow({ mode: 'closed' });
 
-        shadowRoot.innerHTML = `
-            <style>${STYLES}</style>
-            <div class="control-bar">
-                <div class="progress-container">
-                    <div class="progress-buffered"></div>
-                    <div class="progress-fill"></div>
-                    <div class="progress-tooltip"></div>
-                </div>
-                <div class="controls-wrapper">
-                    <button class="btn btn-icon play-pause" title="Play/Pause">▶️</button>
-                    
-                    <div class="speed-combo">
-                        <button class="btn speed-btn slower" title="Slower">⏪</button>
-                        <button class="btn speed-text" title="Click to cycle speed">1.0x</button>
-                        <button class="btn speed-btn faster" title="Faster">⏩</button>
-                    </div>
-                    
-                    <div class="time-display">0:00 / 0:00</div>
-                    
-                    <div class="hide-btn">
-                        <button class="btn hide-trigger" title="Hide controls">👁️ Hide 5s</button>
-                        <div class="hide-select">
-                            ${HIDE_DURATIONS.map(d => `<div class="hide-option" data-value="${d.value}">${d.label}</div>`).join('')}
-                        </div>
-                    </div>
-                    
-                    <button class="btn kebab-btn" title="More options">⋮</button><!-- ☰ -->
-                    <div class="kebab-menu"></div>
-                </div>
-            </div>
-        `;
+        // Build DOM using createElement (Trusted Types compatible - no innerHTML)
+        const style = createElement('style');
+        style.textContent = STYLES;
+        shadowRoot.appendChild(style);
 
-        // Cache DOM elements
-        const $ = (sel) => shadowRoot.querySelector(sel);
-        progressBar = $('.progress-container');
-        progressFill = $('.progress-fill');
-        progressBuffered = $('.progress-buffered');
-        progressTooltip = $('.progress-tooltip');
-        playPauseBtn = $('.play-pause');
-        slowerBtn = $('.slower');
-        speedText = $('.speed-text');
-        fasterBtn = $('.faster');
-        timeDisplay = $('.time-display');
-        hideBtn = $('.hide-trigger');
-        hideSelect = $('.hide-select');
-        kebabBtn = $('.kebab-btn');
-        kebabMenu = $('.kebab-menu');
+        // Control bar container
+        const controlBarDiv = createElement('div', 'control-bar');
+        
+        // Progress container
+        const progressContainer = createElement('div', 'progress-container');
+        progressBuffered = createElement('div', 'progress-buffered');
+        progressFill = createElement('div', 'progress-fill');
+        progressTooltip = createElement('div', 'progress-tooltip');
+        progressContainer.appendChild(progressBuffered);
+        progressContainer.appendChild(progressFill);
+        progressContainer.appendChild(progressTooltip);
+        controlBarDiv.appendChild(progressContainer);
+        progressBar = progressContainer;
+
+        // Controls wrapper
+        const controlsWrapper = createElement('div', 'controls-wrapper');
+        
+        // Play/Pause button
+        playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' }, '▶️');
+        controlsWrapper.appendChild(playPauseBtn);
+        
+        // Speed combo
+        const speedCombo = createElement('div', 'speed-combo');
+        slowerBtn = createElement('button', 'btn speed-btn slower', { title: 'Slower' }, '⏪');
+        speedText = createElement('button', 'btn speed-text', { title: 'Click to cycle speed' }, '1.0x');
+        fasterBtn = createElement('button', 'btn speed-btn faster', { title: 'Faster' }, '⏩');
+        speedCombo.appendChild(slowerBtn);
+        speedCombo.appendChild(speedText);
+        speedCombo.appendChild(fasterBtn);
+        controlsWrapper.appendChild(speedCombo);
+        
+        // Time display
+        timeDisplay = createElement('div', 'time-display', {}, '0:00 / 0:00');
+        controlsWrapper.appendChild(timeDisplay);
+        
+        // Hide button with dropdown
+        const hideBtnContainer = createElement('div', 'hide-btn');
+        hideBtn = createElement('button', 'btn hide-trigger', { title: 'Hide controls' }, '👁️ Hide 5s');
+        hideSelect = createElement('div', 'hide-select');
+        HIDE_DURATIONS.forEach(d => {
+            const opt = createElement('div', 'hide-option', { 'data-value': d.value }, d.label);
+            hideSelect.appendChild(opt);
+        });
+        hideBtnContainer.appendChild(hideBtn);
+        hideBtnContainer.appendChild(hideSelect);
+        controlsWrapper.appendChild(hideBtnContainer);
+        
+        // Kebab menu
+        kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' }, '⋮');
+        kebabMenu = createElement('div', 'kebab-menu');
+        controlsWrapper.appendChild(kebabBtn);
+        controlsWrapper.appendChild(kebabMenu);
+        
+        controlBarDiv.appendChild(controlsWrapper);
+        shadowRoot.appendChild(controlBarDiv);
 
         // Apply saved speed
         currentSpeed = getSavedSpeed();
@@ -605,7 +629,10 @@
         // Handle live streams
         if (!isFinite(duration)) {
             progressFill.style.width = '100%';
-            timeDisplay.innerHTML = '<span class="live-badge">LIVE</span>';
+            // Use DOM methods for Trusted Types compatibility
+            timeDisplay.textContent = '';
+            const liveBadge = createElement('span', 'live-badge', {}, 'LIVE');
+            timeDisplay.appendChild(liveBadge);
             return;
         }
 
@@ -694,10 +721,8 @@
             hideBtnContainer.classList.add('hidden');
             kebabBtn.classList.add('visible');
             
-            // Add hide options to kebab menu
-            const hideItem = document.createElement('div');
-            hideItem.className = 'kebab-item';
-            hideItem.innerHTML = '👁️ Hide controls';
+            // Add hide options to kebab menu (use textContent for Trusted Types)
+            const hideItem = createElement('div', 'kebab-item', {}, '👁️ Hide controls');
             hideItem.addEventListener('click', () => {
                 hideControlBar(5);
                 kebabMenu.classList.remove('visible');
