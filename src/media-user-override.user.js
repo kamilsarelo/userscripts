@@ -382,17 +382,37 @@
             background: rgba(0, 123, 255, 0.5);
         }
         
-        .speed-select {
+        /* Shared dropdown styles */
+        .dropdown {
             position: absolute;
             bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 6px;
             padding: 4px;
             margin-bottom: 4px;
             display: none;
+        }
+        
+        .dropdown.visible {
+            display: block;
+        }
+        
+        .dropdown-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            border-radius: 4px;
+        }
+        
+        .dropdown-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Speed dropdown specific */
+        .speed-select {
+            left: 50%;
+            transform: translateX(-50%);
             min-width: 180px;
         }
         
@@ -403,52 +423,24 @@
         }
         
         .speed-option {
-            padding: 8px 12px;
-            cursor: pointer;
-            white-space: nowrap;
             text-align: center;
-            border-radius: 4px;
-        }
-        
-        .speed-option:hover {
-            background: rgba(255, 255, 255, 0.1);
         }
         
         .speed-option.active {
             background: rgba(0, 123, 255, 0.5);
         }
         
+        /* Hide dropdown specific */
         .hide-btn {
             position: relative;
         }
         
         .hide-select {
-            position: absolute;
-            bottom: 100%;
             right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 4px 0;
-            margin-bottom: 4px;
-            display: none;
             min-width: 100px;
         }
         
-        .hide-select.visible {
-            display: block;
-        }
-        
-        .hide-option {
-            padding: 8px 12px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        
-        .hide-option:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
+        /* Kebab menu specific */
         .kebab-btn {
             padding: 8px 10px;
             min-width: 36px;
@@ -460,32 +452,14 @@
         }
         
         .kebab-menu {
-            position: absolute;
-            bottom: 100%;
             right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 4px 0;
-            margin-bottom: 4px;
-            display: none;
             min-width: 150px;
         }
         
-        .kebab-menu.visible {
-            display: block;
-        }
-        
         .kebab-item {
-            padding: 10px 15px;
-            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        
-        .kebab-item:hover {
-            background: rgba(255, 255, 255, 0.1);
         }
         
         .time-display {
@@ -567,9 +541,9 @@
         // Speed text button with dropdown
         const speedTextContainer = createElement('div', 'speed-text-container');
         speedText = createElement('button', 'btn speed-text', { title: 'Select speed' }, '1.0x');
-        speedSelect = createElement('div', 'speed-select');
+        speedSelect = createElement('div', 'dropdown speed-select');
         SPEEDS.forEach(s => {
-            const opt = createElement('div', 'speed-option', { 'data-value': s }, s + 'x');
+            const opt = createElement('div', 'dropdown-option speed-option', { 'data-value': s }, s + 'x');
             speedSelect.appendChild(opt);
         });
         speedTextContainer.appendChild(speedText);
@@ -588,9 +562,9 @@
         // Hide button with dropdown
         const hideBtnContainer = createElement('div', 'hide-btn');
         hideBtn = createElement('button', 'btn hide-trigger', { title: 'Hide controls' }, '👁️ Hide 5s');
-        hideSelect = createElement('div', 'hide-select');
+        hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
-            const opt = createElement('div', 'hide-option', { 'data-value': d.value }, d.label);
+            const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, d.label);
             hideSelect.appendChild(opt);
         });
         hideBtnContainer.appendChild(hideBtn);
@@ -599,7 +573,7 @@
         
         // Kebab menu
         kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' }, '⋮');
-        kebabMenu = createElement('div', 'kebab-menu');
+        kebabMenu = createElement('div', 'dropdown kebab-menu');
         controlsWrapper.appendChild(kebabBtn);
         controlsWrapper.appendChild(kebabMenu);
         
@@ -633,7 +607,7 @@
         });
         
         // Speed dropdown options
-        speedSelect.querySelectorAll('.speed-option').forEach(opt => {
+        speedSelect.querySelectorAll('.dropdown-option').forEach(opt => {
             opt.addEventListener('click', (e) => {
                 const value = parseFloat(e.target.dataset.value);
                 setSpeed(value);
@@ -699,7 +673,7 @@
 
         // Hide controls
         hideBtn.addEventListener('click', () => hideControlBar(5));
-        hideSelect.querySelectorAll('.hide-option').forEach(opt => {
+        hideSelect.querySelectorAll('.dropdown-option').forEach(opt => {
             opt.addEventListener('click', (e) => {
                 const value = parseInt(e.target.dataset.value);
                 hideControlBar(value);
@@ -776,7 +750,7 @@
         if (!speedSelect || !activeMedia) return;
         
         const currentRate = activeMedia.playbackRate;
-        speedSelect.querySelectorAll('.speed-option').forEach(opt => {
+        speedSelect.querySelectorAll('.dropdown-option').forEach(opt => {
             const value = parseFloat(opt.dataset.value);
             if (value === currentRate) {
                 opt.classList.add('active');
@@ -921,14 +895,14 @@
             kebabBtn.classList.add('visible');
             
             // Add hide options to kebab menu (use textContent for Trusted Types)
-            const hideItem = createElement('div', 'kebab-item', {}, '👁️ Hide controls');
+            const hideItem = createElement('div', 'dropdown-option kebab-item', {}, '👁️ Hide controls');
             hideItem.addEventListener('click', () => {
                 hideControlBar(5);
                 kebabMenu.classList.remove('visible');
             });
             
             // Clear and add to kebab
-            if (!kebabMenu.querySelector('.kebab-item')) {
+            if (!kebabMenu.querySelector('.dropdown-option')) {
                 kebabMenu.appendChild(hideItem);
             }
         }
@@ -941,7 +915,7 @@
         }
         
         // Only hide kebab if no overflow items
-        if (kebabMenu.querySelectorAll('.kebab-item').length === 0) {
+        if (kebabMenu.querySelectorAll('.dropdown-option').length === 0) {
             kebabBtn.classList.remove('visible');
         }
     }
