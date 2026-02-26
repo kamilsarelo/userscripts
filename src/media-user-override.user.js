@@ -5,6 +5,8 @@
 // @version      1
 // @author       kamilsarelo
 // @match        *://*/*
+// @exclude       *://console.cloud.google.com/*
+// @exclude       *://admin.google.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @noframes     false
@@ -50,16 +52,30 @@
  * ┌──────────────────────────────────────────────────────────────────────────────┐
  * │  ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ Progress
  * ├──────────────────────────────────────────────────────────────────────────────┤
- * │  [▶️]  [◀◀] [1.5x] [▶▶]  0:00 / 5:30  [👁️ Hide 5s ▼]  [⋮] (if overflow)     │
+ * │  [▶️]  0:00 / 5:30  [◀◀] [1.5x] [▶▶]  [🙈] [🔼]  [⋮] (if overflow)           │
  * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * HIDE BUTTON (Split Button Design)
+ * ---------------------------------
+ * [🙈] - Main button: Hide controls for default duration (5s)
+ * [🔼] - Dropdown button: Opens menu with all duration options:
+ *        • 5s, 15s, 30s, 1min, Until end
  * 
  * BUTTON PRIORITY (for responsive overflow)
  * -----------------------------------------
  * 1. Play/Pause     - Always visible (never overflows)
  * 2. Speed Combo    - Always visible (never overflows)
- * 3. Hide Button    - First to overflow when space is limited
- * 4. Future buttons - Will overflow if needed
+ * 3. Time Display   - Hides first when space is limited (lower priority than speed)
+ * 4. Hide Combo     - Hides after time display
  * 5. Kebab Menu (⋮) - Only visible when overflow exists
+ * 
+ * OVERFLOW BEHAVIOR
+ * -----------------
+ * When space is limited, elements hide in this order:
+ * 1. Time display hides first
+ * 2. Hide combo overflows to kebab menu
+ * When hide combo overflows to kebab menu, ALL duration options are shown:
+ * [⋮] → [🙈 5s] [🙈 15s] [🙈 30s] [🙈 1min] [🙈 Until end]
  * 
  * EDGE CASES HANDLED
  * ------------------
@@ -132,23 +148,24 @@
     // Filter speeds to only those supported by the browser (Chrome/Edge limit playbackRate to ~16x, Firefox allows 32x+)
     const SPEEDS = (() => {
         const m = document.createElement('video');
-        const all = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 4, 8, 16, 32, 64];
+        const all = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 4, 8, 16, 32, 64, 128];
         const supported = all.filter(s => { try { m.playbackRate = s; return true; } catch { return false; }});
         m.remove();
         return supported;
     })();
     const HIDE_DURATIONS = [
-        { value: 5, label: '5s' },
-        { value: 15, label: '15s' },
-        { value: 30, label: '30s' },
-        { value: 60, label: '1min' },
-        { value: -1, label: 'Until end' }
+        { value: 5, label: '5 s' },
+        { value: 15, label: '15 s' },
+        { value: 30, label: '30 s' },
+        { value: 60, label: '1 min' },
+        { value: -1, label: 'Until video end' }
     ];
     const MIN_DURATION = 5; // Minimum media duration in seconds to show controls
     const BUTTON_PRIORITY = {
         playPause: 1,
         speedCombo: 2,
-        hide: 3,
+        timeDisplay: 3, // Lower priority than speed - hides first when space is limited
+        hide: 4,
         kebab: 999 // Always last
     };
 
@@ -430,13 +447,31 @@
             background: rgba(0, 123, 255, 0.5);
         }
         
-        /* Hide dropdown specific */
+        /* Hide combo specific */
+        .hide-combo {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        
         .hide-btn {
+            padding: 8px 12px;
+            min-width: 40px;
+        }
+        
+        .hide-dropdown-btn {
+            padding: 8px 8px;
+            min-width: 32px;
+            font-size: 10px;
+        }
+        
+        .hide-text-container {
             position: relative;
         }
         
         .hide-select {
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
             min-width: 100px;
         }
         
@@ -466,8 +501,11 @@
             font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
             padding: 0 8px;
-            min-width: 90px;
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
             text-align: center;
+            flex-shrink: 0;
         }
         
         .live-badge {
@@ -534,6 +572,10 @@
         playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' }, '▶️');
         controlsWrapper.appendChild(playPauseBtn);
         
+        // Time display (after play/pause, before speed combo - lower priority than speed)
+        timeDisplay = createElement('div', 'time-display', {}, '0:00 / 0:00');
+        controlsWrapper.appendChild(timeDisplay);
+        
         // Speed combo
         const speedCombo = createElement('div', 'speed-combo');
         slowerBtn = createElement('button', 'btn speed-btn slower', { title: 'Slower' }, '⏪');
@@ -555,21 +597,24 @@
         speedCombo.appendChild(fasterBtn);
         controlsWrapper.appendChild(speedCombo);
         
-        // Time display
-        timeDisplay = createElement('div', 'time-display', {}, '0:00 / 0:00');
-        controlsWrapper.appendChild(timeDisplay);
+        // Hide combo (split button: [🙈] [🔼])
+        const hideCombo = createElement('div', 'hide-combo');
+        hideBtn = createElement('button', 'btn hide-btn', { title: 'Hide controls' }, '🙈');
         
-        // Hide button with dropdown
-        const hideBtnContainer = createElement('div', 'hide-btn');
-        hideBtn = createElement('button', 'btn hide-trigger', { title: 'Hide controls' }, '👁️ Hide 5s');
+        // Dropdown trigger button
+        const hideTextContainer = createElement('div', 'hide-text-container');
+        const hideDropdownBtn = createElement('button', 'btn hide-dropdown-btn', { title: 'Hide duration options' }, '🔼');
         hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
-            const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, d.label);
+            const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, '🙈 ' + d.label);
             hideSelect.appendChild(opt);
         });
-        hideBtnContainer.appendChild(hideBtn);
-        hideBtnContainer.appendChild(hideSelect);
-        controlsWrapper.appendChild(hideBtnContainer);
+        hideTextContainer.appendChild(hideDropdownBtn);
+        hideTextContainer.appendChild(hideSelect);
+        
+        hideCombo.appendChild(hideBtn);
+        hideCombo.appendChild(hideTextContainer);
+        controlsWrapper.appendChild(hideCombo);
         
         // Kebab menu
         kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' }, '⋮');
@@ -671,8 +716,17 @@
             e.preventDefault();
         });
 
-        // Hide controls
+        // Hide controls - main button (default 5s)
         hideBtn.addEventListener('click', () => hideControlBar(5));
+        
+        // Hide dropdown toggle (🔼 button)
+        const hideDropdownBtn = shadowRoot.querySelector('.hide-dropdown-btn');
+        hideDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideSelect.classList.toggle('visible');
+        });
+        
+        // Hide dropdown options
         hideSelect.querySelectorAll('.dropdown-option').forEach(opt => {
             opt.addEventListener('click', (e) => {
                 const value = parseInt(e.target.dataset.value);
@@ -681,20 +735,28 @@
             });
         });
 
-        // Hide dropdown toggle
-        hideBtn.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            hideSelect.classList.toggle('visible');
-        });
-
         // Kebab menu
         kebabBtn.addEventListener('click', () => {
             kebabMenu.classList.toggle('visible');
         });
 
-        // Close dropdowns on outside click
+        // Close dropdowns on outside click (document level - for clicks outside control bar)
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#media-user-override-bar')) {
+                hideSelect?.classList.remove('visible');
+                kebabMenu?.classList.remove('visible');
+                speedSelect?.classList.remove('visible');
+            }
+        });
+        
+        // Close dropdowns on click inside control bar (but outside dropdowns)
+        // This is needed because Shadow DOM retargets events, so the document listener
+        // sees clicks inside the control bar as being on the shadow host
+        shadowRoot.addEventListener('click', (e) => {
+            const target = e.target;
+            const isDropdown = target.closest('.dropdown');
+            const isDropdownTrigger = target.closest('.speed-text, .hide-dropdown-btn, .kebab-btn');
+            if (!isDropdown && !isDropdownTrigger) {
                 hideSelect?.classList.remove('visible');
                 kebabMenu?.classList.remove('visible');
                 speedSelect?.classList.remove('visible');
@@ -872,7 +934,7 @@
         const wrapper = entries[0].target;
         const availableWidth = wrapper.clientWidth;
         
-        // Calculate required width for all buttons
+        // Calculate required width for all buttons (excluding progress-hit-area which is fixed position)
         const buttons = wrapper.querySelectorAll('.btn, .speed-combo, .time-display');
         let totalWidth = 0;
         
@@ -880,44 +942,86 @@
             totalWidth += btn.offsetWidth + 8; // 8px gap
         });
 
-        // Check if we need overflow
+        // Check overflow levels and hide elements by priority (higher number = hide first)
+        // Priority order: timeDisplay (3) hides before hide combo (4)
+        const timeDisplayEl = shadowRoot.querySelector('.time-display');
+        const hideCombo = shadowRoot.querySelector('.hide-combo');
+        
+        // First, check if we need to hide timeDisplay (priority 3 - hides first)
+        // Calculate width without timeDisplay
+        const widthWithoutTimeDisplay = totalWidth - (timeDisplayEl ? timeDisplayEl.offsetWidth + 8 : 0);
+        
+        // Then check if we need to hide hide combo (priority 4 - hides after timeDisplay)
+        const widthWithoutHide = widthWithoutTimeDisplay - (hideCombo && !hideCombo.classList.contains('hidden') ? hideCombo.offsetWidth + 8 : 0);
+        
         if (totalWidth > availableWidth) {
-            moveHideToOverflow();
+            // Need to hide something - check priority order
+            if (widthWithoutTimeDisplay <= availableWidth) {
+                // Hiding just timeDisplay is enough
+                hideTimeDisplay();
+                showHideCombo();
+            } else if (widthWithoutHide <= availableWidth) {
+                // Need to hide both timeDisplay and hide combo
+                hideTimeDisplay();
+                moveHideToOverflow();
+            } else {
+                // Even hiding both isn't enough - keep them hidden
+                hideTimeDisplay();
+                moveHideToOverflow();
+            }
         } else {
-            restoreFromOverflow();
+            // Everything fits - show all
+            showTimeDisplay();
+            showHideCombo();
         }
     }
 
+    function hideTimeDisplay() {
+        if (timeDisplay && !timeDisplay.classList.contains('hidden')) {
+            timeDisplay.classList.add('hidden');
+        }
+    }
+
+    function showTimeDisplay() {
+        if (timeDisplay) {
+            timeDisplay.classList.remove('hidden');
+        }
+    }
+
+    function showHideCombo() {
+        const hideCombo = shadowRoot.querySelector('.hide-combo');
+        if (hideCombo) {
+            hideCombo.classList.remove('hidden');
+        }
+        // Clear kebab menu and hide kebab button
+        kebabMenu.innerHTML = '';
+        kebabBtn.classList.remove('visible');
+    }
+
     function moveHideToOverflow() {
-        const hideBtnContainer = shadowRoot.querySelector('.hide-btn');
-        if (hideBtnContainer && !hideBtnContainer.classList.contains('hidden')) {
-            hideBtnContainer.classList.add('hidden');
+        const hideCombo = shadowRoot.querySelector('.hide-combo');
+        if (hideCombo && !hideCombo.classList.contains('hidden')) {
+            hideCombo.classList.add('hidden');
             kebabBtn.classList.add('visible');
             
-            // Add hide options to kebab menu (use textContent for Trusted Types)
-            const hideItem = createElement('div', 'dropdown-option kebab-item', {}, '👁️ Hide controls');
-            hideItem.addEventListener('click', () => {
-                hideControlBar(5);
-                kebabMenu.classList.remove('visible');
-            });
-            
-            // Clear and add to kebab
-            if (!kebabMenu.querySelector('.dropdown-option')) {
-                kebabMenu.appendChild(hideItem);
+            // Add all hide duration options to kebab menu
+            // Only add if not already present
+            if (kebabMenu.querySelectorAll('.dropdown-option').length === 0) {
+                HIDE_DURATIONS.forEach(d => {
+                    const hideItem = createElement('div', 'dropdown-option kebab-item', { 'data-value': d.value }, '🙈 ' + d.label);
+                    hideItem.addEventListener('click', () => {
+                        hideControlBar(d.value);
+                        kebabMenu.classList.remove('visible');
+                    });
+                    kebabMenu.appendChild(hideItem);
+                });
             }
         }
     }
 
     function restoreFromOverflow() {
-        const hideBtnContainer = shadowRoot.querySelector('.hide-btn');
-        if (hideBtnContainer) {
-            hideBtnContainer.classList.remove('hidden');
-        }
-        
-        // Only hide kebab if no overflow items
-        if (kebabMenu.querySelectorAll('.dropdown-option').length === 0) {
-            kebabBtn.classList.remove('visible');
-        }
+        showTimeDisplay();
+        showHideCombo();
     }
 
     // ==================== Media Management ====================
