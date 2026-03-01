@@ -7,6 +7,7 @@
 // @match        *://*/*
 // @exclude       *://console.cloud.google.com/*
 // @exclude       *://admin.google.com/*
+// @exclude       *://meet.google.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @noframes     false
@@ -233,6 +234,31 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
+        @keyframes blur-shift {
+            0% {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+                background: rgba(0, 0, 0, 0.8);
+            }
+            50% {
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                background: rgba(0, 0, 0, 0.65);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+background: rgba(0, 0, 0, 0.75);
+            }
+            100% {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+                background: rgba(0, 0, 0, 0.8);
+            }
+        }
+        
         * {
             box-sizing: border-box;
             margin: 0;
@@ -259,6 +285,7 @@
         .control-bar.visible {
             transform: translateY(0);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3);
+            animation: blur-shift 8s infinite ease-in-out;
         }
         
         .progress-hit-area {
@@ -344,6 +371,8 @@
         .btn {
             padding: 8px 12px;
             border: 1px solid rgba(255, 255, 255, 0.3);
+border: 1px solid rgba(255, 255, 255, 0.2);
+border: none;
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
@@ -356,11 +385,18 @@
             align-items: center;
             justify-content: center;
             gap: 4px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
         }
         
         .btn:hover {
             background: rgba(255, 255, 255, 0.2);
+background: rgba(0, 0, 0, 0.25);
+background: rgba(255, 255, 255, 0.25);
+/*
             border-color: rgba(255, 255, 255, 0.5);
+*/
         }
         
         .btn:active {
@@ -369,6 +405,31 @@
         
         .btn-icon {
             min-width: 40px;
+max-width: 40px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+background: rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        .btn-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .slower svg,
+        .faster svg,
+        .hide-btn svg {
+            width: 24px;
+            height: 24px;
         }
         
         .speed-combo {
@@ -454,15 +515,19 @@
             gap: 2px;
         }
         
-        .hide-btn {
-            padding: 8px 12px;
-            min-width: 40px;
-        }
-        
         .hide-dropdown-btn {
             padding: 8px 8px;
             min-width: 32px;
             font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hide-dropdown-btn svg,
+        .kebab-btn svg {
+            width: 20px;
+            height: 20px;
         }
         
         .hide-text-container {
@@ -480,6 +545,8 @@
             padding: 8px 10px;
             min-width: 36px;
             display: none;
+            align-items: center;
+            justify-content: center;
         }
         
         .kebab-btn.visible {
@@ -569,7 +636,8 @@
         controlsWrapper.appendChild(progressHitArea);
         
         // Play/Pause button
-        playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' }, '▶️');
+        playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' });
+        playPauseBtn.appendChild(createPlaySvg());
         controlsWrapper.appendChild(playPauseBtn);
         
         // Time display (after play/pause, before speed combo - lower priority than speed)
@@ -578,7 +646,8 @@
         
         // Speed combo
         const speedCombo = createElement('div', 'speed-combo');
-        slowerBtn = createElement('button', 'btn speed-btn slower', { title: 'Slower' }, '⏪');
+        slowerBtn = createElement('button', 'btn btn-icon slower', { title: 'Slower' });
+        slowerBtn.appendChild(createDecreaseSpeedSvg());
         
         // Speed text button with dropdown
         const speedTextContainer = createElement('div', 'speed-text-container');
@@ -591,7 +660,8 @@
         speedTextContainer.appendChild(speedText);
         speedTextContainer.appendChild(speedSelect);
         
-        fasterBtn = createElement('button', 'btn speed-btn faster', { title: 'Faster' }, '⏩');
+        fasterBtn = createElement('button', 'btn btn-icon faster', { title: 'Faster' });
+        fasterBtn.appendChild(createIncreaseSpeedSvg());
         speedCombo.appendChild(slowerBtn);
         speedCombo.appendChild(speedTextContainer);
         speedCombo.appendChild(fasterBtn);
@@ -599,11 +669,13 @@
         
         // Hide combo (split button: [🙈] [🔼])
         const hideCombo = createElement('div', 'hide-combo');
-        hideBtn = createElement('button', 'btn hide-btn', { title: 'Hide controls' }, '🙈');
+        hideBtn = createElement('button', 'btn btn-icon hide-btn', { title: 'Hide controls' });
+        hideBtn.appendChild(createHideSvg());
         
         // Dropdown trigger button
         const hideTextContainer = createElement('div', 'hide-text-container');
-        const hideDropdownBtn = createElement('button', 'btn hide-dropdown-btn', { title: 'Hide duration options' }, '🔼');
+        const hideDropdownBtn = createElement('button', 'btn hide-dropdown-btn', { title: 'Hide duration options' });
+        hideDropdownBtn.appendChild(createHamburgerSvg());
         hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
             const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, '🙈 ' + d.label);
@@ -617,7 +689,8 @@
         controlsWrapper.appendChild(hideCombo);
         
         // Kebab menu
-        kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' }, '⋮');
+        kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' });
+        kebabBtn.appendChild(createHamburgerSvg());
         kebabMenu = createElement('div', 'dropdown kebab-menu');
         controlsWrapper.appendChild(kebabBtn);
         controlsWrapper.appendChild(kebabMenu);
@@ -893,9 +966,476 @@
         }
     }
 
+    // ==================== SVG Helpers ====================
+
+    function createPlaySvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.setAttribute('viewBox', '0 0 210 200');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        const rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('width', '210');
+        rect.setAttribute('height', '200');
+        g.appendChild(rect);
+
+        const innerG = document.createElementNS(ns, 'g');
+        innerG.setAttribute('transform', 'translate(19 0)');
+
+        const path1 = document.createElementNS(ns, 'path');
+        path1.setAttribute('d', 'M0 26L0 166.001L45.0001 192L174 123L174 69L45 0L0 26Z');
+        path1.setAttribute('fill', '#FFFFFF');
+        path1.setAttribute('fill-rule', 'evenodd');
+        path1.setAttribute('transform', 'translate(0 4)');
+        innerG.appendChild(path1);
+
+        const path2 = document.createElementNS(ns, 'path');
+        path2.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
+        path2.setAttribute('fill', '#FFFFFF');
+        path2.setAttribute('fill-rule', 'evenodd');
+        innerG.appendChild(path2);
+
+        const path3 = document.createElementNS(ns, 'path');
+        path3.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
+        path3.setAttribute('fill', '#FFFFFF');
+        path3.setAttribute('fill-rule', 'evenodd');
+        path3.setAttribute('transform', 'translate(0 140)');
+        innerG.appendChild(path3);
+
+        const path4 = document.createElementNS(ns, 'path');
+        path4.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
+        path4.setAttribute('fill', '#FFFFFF');
+        path4.setAttribute('fill-rule', 'evenodd');
+        path4.setAttribute('transform', 'translate(131 70)');
+        innerG.appendChild(path4);
+
+        g.appendChild(innerG);
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createPauseSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.setAttribute('viewBox', '0 0 210 200');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        const rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('width', '210');
+        rect.setAttribute('height', '200');
+        g.appendChild(rect);
+
+        const path1 = document.createElementNS(ns, 'path');
+        path1.setAttribute('d', 'M30 0C46.5708 0 60 13.4292 60 30L60 170C60 186.571 46.5708 200 30 200L30 200C13.4292 200 0 186.571 0 170L0 30C0 13.4292 13.4292 0 30 0Z');
+        path1.setAttribute('fill', '#FFFFFF');
+        path1.setAttribute('transform', 'translate(19 0)');
+        g.appendChild(path1);
+
+        const path2 = document.createElementNS(ns, 'path');
+        path2.setAttribute('d', 'M30 0C46.5708 0 60 13.4292 60 30L60 170C60 186.571 46.5708 200 30 200L30 200C13.4292 200 0 186.571 0 170L0 30C0 13.4292 13.4292 0 30 0Z');
+        path2.setAttribute('fill', '#FFFFFF');
+        path2.setAttribute('transform', 'translate(131 0)');
+        g.appendChild(path2);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createDecreaseSpeedSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+        svg.setAttribute('viewBox', '0 0 300 300');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        // Main background circle (star shape)
+        const path1 = document.createElementNS(ns, 'path');
+        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.462 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9626C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67499 177.732 0.0126648 150.069 3.05176e-05C122.405 -0.0126343 95.2771 7.62488 71.6836 22.0681C48.0903 36.5114 28.9504 57.1978 16.3801 81.8403C3.81006 106.483 -1.70093 134.121 0.457031 161.7C2.22632 184.313 9.09448 206.164 20.4683 225.641C24.6174 232.746 34.0054 234.194 40.6643 229.361C40.719 229.321 40.7739 229.281 40.8286 229.241C47.4875 224.408 48.8755 215.127 44.9041 207.921C36.6829 193.004 31.7031 176.454 30.3657 159.36C28.6394 137.297 33.0481 115.186 43.1042 95.4722C53.1604 75.7582 68.4722 59.2091 87.3469 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7119C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.272 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
+        path1.setAttribute('fill', '#FFFFFF');
+        path1.setAttribute('fill-rule', 'evenodd');
+        g.appendChild(path1);
+
+        // Triangle
+        const path2 = document.createElementNS(ns, 'path');
+        path2.setAttribute('d', 'M0 18.0815L51.946 96.0001L95.946 52.0001L17.9458 0L0 18.0815Z');
+        path2.setAttribute('fill', '#FFFFFF');
+        path2.setAttribute('fill-rule', 'evenodd');
+        path2.setAttribute('transform', 'translate(75 75)');
+        g.appendChild(path2);
+
+        // Dot 1
+        const path3 = document.createElementNS(ns, 'path');
+        path3.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path3.setAttribute('fill', '#FFFFFF');
+        path3.setAttribute('fill-rule', 'evenodd');
+        path3.setAttribute('transform', 'matrix(1 0 -0 1 201 73)');
+        g.appendChild(path3);
+
+        // Dot 2
+        const path4 = document.createElementNS(ns, 'path');
+        path4.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path4.setAttribute('fill', '#FFFFFF');
+        path4.setAttribute('fill-rule', 'evenodd');
+        path4.setAttribute('transform', 'matrix(1 0 -0 1 73 73)');
+        g.appendChild(path4);
+
+        // Large circle
+        const path5 = document.createElementNS(ns, 'path');
+        path5.setAttribute('d', 'M0 31C0 13.8792 13.8792 0 31 0C48.1208 0 62 13.8792 62 31C62 48.1208 48.1208 62 31 62C13.8792 62 0 48.1208 0 31Z');
+        path5.setAttribute('fill', '#FFFFFF');
+        path5.setAttribute('fill-rule', 'evenodd');
+        path5.setAttribute('transform', 'translate(119 119)');
+        g.appendChild(path5);
+
+        // Dot 3
+        const path6 = document.createElementNS(ns, 'path');
+        path6.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path6.setAttribute('fill', '#FFFFFF');
+        path6.setAttribute('fill-rule', 'evenodd');
+        path6.setAttribute('transform', 'translate(227 137)');
+        g.appendChild(path6);
+
+        // Dot 4
+        const path7 = document.createElementNS(ns, 'path');
+        path7.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path7.setAttribute('fill', '#FFFFFF');
+        path7.setAttribute('fill-rule', 'evenodd');
+        path7.setAttribute('transform', 'translate(137 47)');
+        g.appendChild(path7);
+
+        // Dot 5
+        const path8 = document.createElementNS(ns, 'path');
+        path8.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path8.setAttribute('fill', '#FFFFFF');
+        path8.setAttribute('fill-rule', 'evenodd');
+        path8.setAttribute('transform', 'translate(47 137)');
+        g.appendChild(path8);
+
+        // <<< symbol
+        const xGroup = document.createElementNS(ns, 'g');
+        xGroup.setAttribute('transform', 'translate(69 228)');
+
+        const line1 = document.createElementNS(ns, 'line');
+        line1.setAttribute('x1', '0');
+        line1.setAttribute('y1', '0');
+        line1.setAttribute('x2', '28.284');
+        line1.setAttribute('y2', '35.355');
+        line1.setAttribute('fill', 'none');
+        line1.setAttribute('stroke', '#FFFFFF');
+        line1.setAttribute('stroke-width', '30');
+        line1.setAttribute('stroke-linecap', 'round');
+        line1.setAttribute('transform', 'translate(0 27.929)');
+        xGroup.appendChild(line1);
+
+        const line2 = document.createElementNS(ns, 'line');
+        line2.setAttribute('x1', '0');
+        line2.setAttribute('y1', '35.355');
+        line2.setAttribute('x2', '28.284');
+        line2.setAttribute('y2', '0');
+        line2.setAttribute('fill', 'none');
+        line2.setAttribute('stroke', '#FFFFFF');
+        line2.setAttribute('stroke-width', '30');
+        line2.setAttribute('stroke-linecap', 'round');
+        xGroup.appendChild(line2);
+
+        const line3 = document.createElementNS(ns, 'line');
+        line3.setAttribute('x1', '0');
+        line3.setAttribute('y1', '0');
+        line3.setAttribute('x2', '28.284');
+        line3.setAttribute('y2', '35.355');
+        line3.setAttribute('fill', 'none');
+        line3.setAttribute('stroke', '#FFFFFF');
+        line3.setAttribute('stroke-width', '30');
+        line3.setAttribute('stroke-linecap', 'round');
+        line3.setAttribute('transform', 'translate(60 27.929)');
+        xGroup.appendChild(line3);
+
+        const line4 = document.createElementNS(ns, 'line');
+        line4.setAttribute('x1', '0');
+        line4.setAttribute('y1', '35.355');
+        line4.setAttribute('x2', '28.284');
+        line4.setAttribute('y2', '0');
+        line4.setAttribute('fill', 'none');
+        line4.setAttribute('stroke', '#FFFFFF');
+        line4.setAttribute('stroke-width', '30');
+        line4.setAttribute('stroke-linecap', 'round');
+        line4.setAttribute('transform', 'translate(60 0)');
+        xGroup.appendChild(line4);
+
+        const line5 = document.createElementNS(ns, 'line');
+        line5.setAttribute('x1', '0');
+        line5.setAttribute('y1', '0');
+        line5.setAttribute('x2', '28.284');
+        line5.setAttribute('y2', '35.355');
+        line5.setAttribute('fill', 'none');
+        line5.setAttribute('stroke', '#FFFFFF');
+        line5.setAttribute('stroke-width', '30');
+        line5.setAttribute('stroke-linecap', 'round');
+        line5.setAttribute('transform', 'translate(120 28)');
+        xGroup.appendChild(line5);
+
+        const line6 = document.createElementNS(ns, 'line');
+        line6.setAttribute('x1', '0');
+        line6.setAttribute('y1', '35.355');
+        line6.setAttribute('x2', '28.284');
+        line6.setAttribute('y2', '0');
+        line6.setAttribute('fill', 'none');
+        line6.setAttribute('stroke', '#FFFFFF');
+        line6.setAttribute('stroke-width', '30');
+        line6.setAttribute('stroke-linecap', 'round');
+        line6.setAttribute('transform', 'translate(120 0)');
+        xGroup.appendChild(line6);
+
+        g.appendChild(xGroup);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createIncreaseSpeedSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+        svg.setAttribute('viewBox', '0 0 300 300');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        // Main background circle
+        const path1 = document.createElementNS(ns, 'path');
+        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.462 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9625C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67498 177.732 0.012661 150.068 1.90735e-05C122.405 -0.0126419 95.2773 7.62488 71.6836 22.0681C48.0903 36.5114 28.9502 57.1978 16.3804 81.8403C3.81006 106.483 -1.70068 134.121 0.457031 161.7C2.22607 184.313 9.09473 206.164 20.4683 225.641C24.6172 232.746 34.0054 234.194 40.6641 229.361C40.7192 229.321 40.7739 229.281 40.8286 229.241C47.4873 224.408 48.8755 215.127 44.9043 207.921C36.6826 193.004 31.7031 176.454 30.3657 159.36C28.6392 137.297 33.0479 115.186 43.104 95.4722C53.1602 75.7582 68.4722 59.2091 87.3472 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7118C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.272 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
+        path1.setAttribute('fill', '#FFFFFF');
+        path1.setAttribute('fill-rule', 'evenodd');
+        g.appendChild(path1);
+
+        // Triangle
+        const path2 = document.createElementNS(ns, 'path');
+        path2.setAttribute('d', 'M0 18.0815L51.9463 96.0002L95.9463 52.0002L17.9453 0L0 18.0815Z');
+        path2.setAttribute('fill', '#FFFFFF');
+        path2.setAttribute('fill-rule', 'evenodd');
+        path2.setAttribute('transform', 'matrix(-0.707 0.707 -0.707 -0.707 255 150)');
+        g.appendChild(path2);
+
+        // Dot 1
+        const path3 = document.createElementNS(ns, 'path');
+        path3.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 9.53674e-07 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path3.setAttribute('fill', '#FFFFFF');
+        path3.setAttribute('fill-rule', 'evenodd');
+        path3.setAttribute('transform', 'matrix(1 0 -0 1 201 73)');
+        g.appendChild(path3);
+
+        // Dot 2
+        const path4 = document.createElementNS(ns, 'path');
+        path4.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 9.53674e-07 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path4.setAttribute('fill', '#FFFFFF');
+        path4.setAttribute('fill-rule', 'evenodd');
+        path4.setAttribute('transform', 'matrix(1 0 -0 1 73 73)');
+        g.appendChild(path4);
+
+        // Large circle
+        const path5 = document.createElementNS(ns, 'path');
+        path5.setAttribute('d', 'M0 31C0 13.8792 13.8794 0 31 0C48.1206 0 62 13.8792 62 31C62 48.1208 48.1206 62 31 62C13.8794 62 0 48.1208 0 31Z');
+        path5.setAttribute('fill', '#FFFFFF');
+        path5.setAttribute('fill-rule', 'evenodd');
+        path5.setAttribute('transform', 'translate(119 119)');
+        g.appendChild(path5);
+
+        // Dot 3
+        const path6 = document.createElementNS(ns, 'path');
+        path6.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path6.setAttribute('fill', '#FFFFFF');
+        path6.setAttribute('fill-rule', 'evenodd');
+        path6.setAttribute('transform', 'translate(227 137)');
+        g.appendChild(path6);
+
+        // Dot 4
+        const path7 = document.createElementNS(ns, 'path');
+        path7.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path7.setAttribute('fill', '#FFFFFF');
+        path7.setAttribute('fill-rule', 'evenodd');
+        path7.setAttribute('transform', 'translate(137 47)');
+        g.appendChild(path7);
+
+        // Dot 5
+        const path8 = document.createElementNS(ns, 'path');
+        path8.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path8.setAttribute('fill', '#FFFFFF');
+        path8.setAttribute('fill-rule', 'evenodd');
+        path8.setAttribute('transform', 'translate(47 137)');
+        g.appendChild(path8);
+
+        // >>> symbol group
+        const xGroup = document.createElementNS(ns, 'g');
+        xGroup.setAttribute('transform', 'matrix(-1 0 0 1 231 228)');
+
+        const line1 = document.createElementNS(ns, 'line');
+        line1.setAttribute('x1', '0');
+        line1.setAttribute('y1', '0');
+        line1.setAttribute('x2', '28.284');
+        line1.setAttribute('y2', '28.284');
+        line1.setAttribute('fill', 'none');
+        line1.setAttribute('stroke', '#FFFFFF');
+        line1.setAttribute('stroke-width', '30');
+        line1.setAttribute('stroke-linecap', 'round');
+        line1.setAttribute('transform', 'translate(0 27.929)');
+        xGroup.appendChild(line1);
+
+        const line2 = document.createElementNS(ns, 'line');
+        line2.setAttribute('x1', '0');
+        line2.setAttribute('y1', '28.284');
+        line2.setAttribute('x2', '28.284');
+        line2.setAttribute('y2', '0');
+        line2.setAttribute('fill', 'none');
+        line2.setAttribute('stroke', '#FFFFFF');
+        line2.setAttribute('stroke-width', '30');
+        line2.setAttribute('stroke-linecap', 'round');
+        xGroup.appendChild(line2);
+
+        const line3 = document.createElementNS(ns, 'line');
+        line3.setAttribute('x1', '0');
+        line3.setAttribute('y1', '0');
+        line3.setAttribute('x2', '28.284');
+        line3.setAttribute('y2', '28.284');
+        line3.setAttribute('fill', 'none');
+        line3.setAttribute('stroke', '#FFFFFF');
+        line3.setAttribute('stroke-width', '30');
+        line3.setAttribute('stroke-linecap', 'round');
+        line3.setAttribute('transform', 'translate(60 27.929)');
+        xGroup.appendChild(line3);
+
+        const line4 = document.createElementNS(ns, 'line');
+        line4.setAttribute('x1', '0');
+        line4.setAttribute('y1', '28.284');
+        line4.setAttribute('x2', '28.284');
+        line4.setAttribute('y2', '0');
+        line4.setAttribute('fill', 'none');
+        line4.setAttribute('stroke', '#FFFFFF');
+        line4.setAttribute('stroke-width', '30');
+        line4.setAttribute('stroke-linecap', 'round');
+        line4.setAttribute('transform', 'translate(60 0)');
+        xGroup.appendChild(line4);
+
+        const line5 = document.createElementNS(ns, 'line');
+        line5.setAttribute('x1', '0');
+        line5.setAttribute('y1', '0');
+        line5.setAttribute('x2', '28.284');
+        line5.setAttribute('y2', '28.284');
+        line5.setAttribute('fill', 'none');
+        line5.setAttribute('stroke', '#FFFFFF');
+        line5.setAttribute('stroke-width', '30');
+        line5.setAttribute('stroke-linecap', 'round');
+        line5.setAttribute('transform', 'translate(120 28)');
+        xGroup.appendChild(line5);
+
+        const line6 = document.createElementNS(ns, 'line');
+        line6.setAttribute('x1', '0');
+        line6.setAttribute('y1', '28.284');
+        line6.setAttribute('x2', '28.284');
+        line6.setAttribute('y2', '0');
+        line6.setAttribute('fill', 'none');
+        line6.setAttribute('stroke', '#FFFFFF');
+        line6.setAttribute('stroke-width', '30');
+        line6.setAttribute('stroke-linecap', 'round');
+        line6.setAttribute('transform', 'translate(120 0)');
+        xGroup.appendChild(line6);
+
+        g.appendChild(xGroup);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createHideSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+        svg.setAttribute('viewBox', '0 0 300 260');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        // Eye shape path
+        const path1 = document.createElementNS(ns, 'path');
+        path1.setAttribute('d', 'M223.291 20.4965Q184.575 0 150 0Q103.132 0 48.6572 37.6616Q22.1152 56.0118 4.20215 74.588Q3.97634 74.8222 3.7609 75.0659Q3.54546 75.3097 3.34079 75.5625Q3.13612 75.8154 2.94261 76.0769Q2.74909 76.3384 2.56709 76.608Q2.3851 76.8777 2.21496 77.1549Q2.04483 77.4322 1.88687 77.7166Q1.72892 78.001 1.58344 78.292Q1.43796 78.583 1.30524 78.88Q1.17251 79.177 1.05279 79.4795Q0.933065 79.782 0.826567 80.0893Q0.72007 80.3967 0.626999 80.7085Q0.533928 81.0202 0.454459 81.3356Q0.37499 81.6511 0.309272 81.9697Q0.243554 82.2883 0.191711 82.6095Q0.139868 82.9307 0.101997 83.2538Q0.0641258 83.5769 0.0402983 83.9013Q0.0164708 84.2258 0.00673152 84.5509Q-0.00300773 84.8761 0.00135959 85.2014Q0.00572691 85.5267 0.0241926 85.8515Q0.0426583 86.1763 0.0751876 86.5Q0.107717 86.8237 0.154249 87.1457Q0.20078 87.4676 0.261227 87.7873Q0.321674 88.1069 0.395922 88.4237Q0.47017 88.7404 0.55808 89.0536Q0.645989 89.3668 0.747395 89.6759Q0.848801 89.985 0.963513 90.2895Q1.07822 90.5939 1.20603 90.8931Q1.33383 91.1922 1.47448 91.4855Q1.61513 91.7789 1.76837 92.0659Q1.9216 92.3528 2.08713 92.6329Q2.25267 92.9129 2.43019 93.1855Q2.6077 93.4582 2.79688 93.7228Q3.43945 94.6218 4.20703 95.4169L4.21094 95.421Q22.1216 113.993 48.6572 132.338Q69.105 146.475 88.4814 155.306L111.406 132.381Q89.7891 124.303 65.7178 107.662Q49.252 96.278 36.6411 85Q49.252 73.722 65.7178 62.3384Q89.9663 45.5738 111.724 37.5002C97.8652 48.6821 89 65.8058 89 85C89 104.083 97.7622 121.118 111.483 132.304L197.304 46.4829C194.615 43.1845 191.588 40.1727 188.275 37.5002Q194.509 39.8133 200.947 42.8397L223.291 20.4965ZM228.061 58.153L249.688 36.5252Q250.514 37.0888 251.343 37.6616Q277.885 56.0118 295.798 74.588Q296.048 74.8469 296.285 75.1175Q296.521 75.3881 296.745 75.6697Q296.969 75.9514 297.179 76.2434Q297.389 76.5355 297.585 76.8373Q297.78 77.1391 297.962 77.4499Q298.143 77.7607 298.309 78.0798Q298.474 78.399 298.625 78.7257Q298.775 79.0524 298.91 79.386Q299.045 79.7195 299.163 80.0592Q299.282 80.3988 299.384 80.7437Q299.486 81.0886 299.571 81.438Q299.657 81.7875 299.725 82.1406Q299.794 82.4937 299.845 82.8497Q299.897 83.2057 299.931 83.5637Q299.966 83.9218 299.983 84.281Q300 84.6403 300 85Q300 85.3597 299.983 85.719Q299.966 86.0783 299.931 86.4364Q299.897 86.7944 299.845 87.1504Q299.794 87.5064 299.725 87.8595Q299.657 88.2126 299.571 88.562Q299.486 88.9115 299.384 89.2564Q299.282 89.6013 299.163 89.9409Q299.045 90.2806 298.91 90.6141Q298.775 90.9477 298.625 91.2744Q298.474 91.6011 298.309 91.9203Q298.143 92.2394 297.961 92.5502Q297.78 92.861 297.585 93.1628Q297.389 93.4646 297.179 93.7566Q296.969 94.0487 296.745 94.3303Q296.521 94.612 296.285 94.8826Q296.048 95.1532 295.798 95.4121L295.763 95.448L295.754 95.4574Q277.853 114.011 251.343 132.338Q196.868 170 150 170Q135.326 170 119.905 166.308L210.324 75.8891C210.77 78.8614 211 81.9037 211 85C211 104.194 202.135 121.318 188.276 132.5Q210.034 124.426 234.282 107.662Q250.748 96.278 263.359 85Q250.748 73.722 234.282 62.3384Q231.15 60.1731 228.061 58.153Z');
+        path1.setAttribute('fill', '#FFFFFF');
+        path1.setAttribute('fill-rule', 'evenodd');
+        path1.setAttribute('transform', 'translate(0 45)');
+        g.appendChild(path1);
+
+        // Diagonal strike-through line
+        const line1 = document.createElementNS(ns, 'line');
+        line1.setAttribute('x1', '0');
+        line1.setAttribute('y1', '230');
+        line1.setAttribute('x2', '230');
+        line1.setAttribute('y2', '0');
+        line1.setAttribute('fill', 'none');
+        line1.setAttribute('stroke', '#FFFFFF');
+        line1.setAttribute('stroke-width', '30');
+        line1.setAttribute('stroke-linecap', 'round');
+        line1.setAttribute('transform', 'translate(35 15)');
+        g.appendChild(line1);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createHamburgerSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.setAttribute('viewBox', '0 0 60 240');
+        svg.setAttribute('fill', 'none');
+
+        const g = document.createElementNS(ns, 'g');
+
+        // Three circles stacked vertically (hamburger menu style)
+        const circle1 = document.createElementNS(ns, 'path');
+        circle1.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle1.setAttribute('fill', '#FFFFFF');
+        circle1.setAttribute('fill-rule', 'evenodd');
+        g.appendChild(circle1);
+
+        const circle2 = document.createElementNS(ns, 'path');
+        circle2.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle2.setAttribute('fill', '#FFFFFF');
+        circle2.setAttribute('fill-rule', 'evenodd');
+        circle2.setAttribute('transform', 'translate(0 90)');
+        g.appendChild(circle2);
+
+        const circle3 = document.createElementNS(ns, 'path');
+        circle3.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle3.setAttribute('fill', '#FFFFFF');
+        circle3.setAttribute('fill-rule', 'evenodd');
+        circle3.setAttribute('transform', 'translate(0 180)');
+        g.appendChild(circle3);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
     function updatePlayPauseButton() {
         if (!playPauseBtn || !activeMedia) return;
-        playPauseBtn.textContent = activeMedia.paused ? '▶️' : '⏸️';
+        // Clear existing SVG using textContent (Trusted Types safe)
+        playPauseBtn.textContent = '';
+        if (activeMedia.paused) {
+            playPauseBtn.appendChild(createPlaySvg());
+        } else {
+            playPauseBtn.appendChild(createPauseSvg());
+        }
     }
 
     // ==================== Control Bar Visibility ====================
