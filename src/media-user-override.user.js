@@ -689,14 +689,24 @@ background: yellow;
     // ==================== Event Listeners ====================
 
     function setupEventListeners() {
+        // Helper to close all dropdowns except one
+        function closeOtherDropdowns(except) {
+            if (except !== speedSelect) speedSelect?.classList.remove('visible');
+            if (except !== hideSelect) hideSelect?.classList.remove('visible');
+            if (except !== kebabMenu) kebabMenu?.classList.remove('visible');
+        }
+
         // Play/Pause
         playPauseBtn.addEventListener('click', togglePlayPause);
 
         // Speed controls
         slowerBtn.addEventListener('click', () => changeSpeed(-1));
         fasterBtn.addEventListener('click', () => changeSpeed(1));
+        
+        // Speed text dropdown toggle
         speedText.addEventListener('click', (e) => {
             e.stopPropagation();
+            closeOtherDropdowns(speedSelect);
             speedSelect.classList.toggle('visible');
             updateSpeedOptions();
         });
@@ -773,6 +783,7 @@ background: yellow;
         const hideDropdownBtn = shadowRoot.querySelector('.hide-dropdown-btn');
         hideDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            closeOtherDropdowns(hideSelect);
             hideSelect.classList.toggle('visible');
         });
         
@@ -786,7 +797,9 @@ background: yellow;
         });
 
         // Kebab menu
-        kebabBtn.addEventListener('click', () => {
+        kebabBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeOtherDropdowns(kebabMenu);
             kebabMenu.classList.toggle('visible');
         });
 
