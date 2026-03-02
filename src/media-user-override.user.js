@@ -191,6 +191,7 @@
     let hideSelect = null;
     let kebabBtn = null;
     let kebabMenu = null;
+    let kebabContainer = null;
     let progressBar = null;
     let progressFill = null;
     let progressBuffered = null;
@@ -236,25 +237,18 @@
         
         @keyframes blur-shift {
             0% {
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-backdrop-filter: blur(20px);
--webkit-backdrop-filter: blur(20px);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
                 background: rgba(0, 0, 0, 0.8);
             }
             50% {
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                background: rgba(0, 0, 0, 0.65);
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-background: rgba(0, 0, 0, 0.75);
-            }
-            100% {
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
-backdrop-filter: blur(20px);
--webkit-backdrop-filter: blur(20px);
+                background: rgba(0, 0, 0, 0.78);
+            }
+            100% {
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
                 background: rgba(0, 0, 0, 0.8);
             }
         }
@@ -289,15 +283,24 @@ backdrop-filter: blur(20px);
         }
         
         .progress-hit-area {
+
             position: fixed;
             bottom: 54px; /* controls-wrapper height (~44px) + progress zone (14px) - controls-wrapper padding */
+            height: 14px;
+/*
+position: absolute;
+bottom: 100%;  /* Sit on top of controlsWrapper */
+height: 14px;
+*/s
             left: 0;
             width: 100%;
-            height: 14px;
             cursor: pointer;
             z-index: 10;
             -webkit-tap-highlight-color: transparent;
             touch-action: none;
+/*
+background: yellow;
+*/
         }
         
         .progress-container {
@@ -368,50 +371,35 @@ backdrop-filter: blur(20px);
             padding: 10px 15px;
         }
         
-        .btn {
-            padding: 8px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-border: 1px solid rgba(255, 255, 255, 0.2);
-border: none;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            white-space: nowrap;
+        /* === Unified Control System === */
+        
+        /* Container styles - holds one or more buttons with permanent translucent bg */
+        .ctrl-container {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 4px;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            user-select: none;
+            background: rgba(255, 255, 255, 0.15);
         }
         
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-background: rgba(0, 0, 0, 0.25);
-background: rgba(255, 255, 255, 0.25);
-/*
-            border-color: rgba(255, 255, 255, 0.5);
-*/
+        /* Pill container - for multi-button groups (speed, hide) */
+        .pill-container {
+            border-radius: 20px;
         }
         
-        .btn:active {
-            transform: scale(0.95);
-        }
-        
-        .btn-icon {
-            min-width: 40px;
-max-width: 40px;
+        /* Circle container - for single icon buttons (play/pause) */
+        .circle-container {
+            border-radius: 50%;
             width: 40px;
             height: 40px;
             padding: 0;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.8);
-background: rgba(255, 255, 255, 0.15);
+            justify-content: center;
+        }
+        
+        /* Button styles - transparent, get bg on hover/click */
+        .ctrl-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -419,48 +407,46 @@ background: rgba(255, 255, 255, 0.15);
             touch-action: manipulation;
             user-select: none;
         }
-        
-        .btn-icon svg {
-            width: 20px;
-            height: 20px;
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Force re-render to clear stuck hover on mobile */
+        .ctrl-btn.touching {
+            display: inline;
+        }
+
+        .ctrl-btn:active svg {
+            transform: scale(0.95);
         }
         
-        .slower svg,
-        .faster svg,
-        .hide-btn svg {
-            width: 24px;
-            height: 24px;
+        /* Icon button specific */
+        .icon-btn {
+            width: 40px;
+            height: 40px;
         }
         
-        .speed-combo {
-            display: flex;
-            align-items: center;
-            gap: 2px;
+        .icon-btn:hover {
+            border-radius: 50%;
         }
-        
-        .speed-btn {
-            padding: 8px 10px;
-            min-width: 36px;
+
+        .icon-btn svg {
+            width: 32px;
+            height: 32px;
         }
-        
-        .speed-text {
+
+        /* Text button specific */
+        .text-btn {
             padding: 8px 12px;
-            min-width: 60px;
-            text-align: center;
+            min-width: 50px;
+            max-width: 50px;
             font-weight: 600;
-            background: rgba(0, 123, 255, 0.3);
-            border-color: rgba(0, 123, 255, 0.5);
+            font-size: 14px;
         }
         
-        .speed-text-container {
-            position: relative;
-        }
-        
-        .speed-text:hover {
-            background: rgba(0, 123, 255, 0.5);
-        }
-        
-        /* Shared dropdown styles */
+        /* === Dropdown styles === */
+
         .dropdown {
             position: absolute;
             bottom: 100%;
@@ -470,6 +456,7 @@ background: rgba(255, 255, 255, 0.15);
             padding: 4px;
             margin-bottom: 4px;
             display: none;
+            z-index: 100;
         }
         
         .dropdown.visible {
@@ -508,32 +495,7 @@ background: rgba(255, 255, 255, 0.15);
             background: rgba(0, 123, 255, 0.5);
         }
         
-        /* Hide combo specific */
-        .hide-combo {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-        
-        .hide-dropdown-btn {
-            padding: 8px 8px;
-            min-width: 32px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .hide-dropdown-btn svg,
-        .kebab-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-        
-        .hide-text-container {
-            position: relative;
-        }
-        
+        /* Hide dropdown specific */
         .hide-select {
             left: 50%;
             transform: translateX(-50%);
@@ -541,18 +503,6 @@ background: rgba(255, 255, 255, 0.15);
         }
         
         /* Kebab menu specific */
-        .kebab-btn {
-            padding: 8px 10px;
-            min-width: 36px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .kebab-btn.visible {
-            display: flex;
-        }
-        
         .kebab-menu {
             right: 0;
             min-width: 150px;
@@ -564,6 +514,8 @@ background: rgba(255, 255, 255, 0.15);
             gap: 8px;
         }
         
+        /* === Time display === */
+
         .time-display {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
@@ -635,23 +587,26 @@ background: rgba(255, 255, 255, 0.15);
         const progressHitArea = createElement('div', 'progress-hit-area');
         controlsWrapper.appendChild(progressHitArea);
         
-        // Play/Pause button
-        playPauseBtn = createElement('button', 'btn btn-icon play-pause', { title: 'Play/Pause' });
+        // Play/Pause button (single circle container)
+        const playPauseContainer = createElement('div', 'ctrl-container circle-container');
+        playPauseBtn = createElement('button', 'ctrl-btn icon-btn play-pause', { title: 'Play/Pause' });
         playPauseBtn.appendChild(createPlaySvg());
-        controlsWrapper.appendChild(playPauseBtn);
+        playPauseContainer.appendChild(playPauseBtn);
+        controlsWrapper.appendChild(playPauseContainer);
         
         // Time display (after play/pause, before speed combo - lower priority than speed)
         timeDisplay = createElement('div', 'time-display', {}, '0:00 / 0:00');
         controlsWrapper.appendChild(timeDisplay);
         
-        // Speed combo
-        const speedCombo = createElement('div', 'speed-combo');
-        slowerBtn = createElement('button', 'btn btn-icon slower', { title: 'Slower' });
+        // Speed combo (pill container with multiple buttons)
+        const speedCombo = createElement('div', 'ctrl-container pill-container speed-combo');
+        slowerBtn = createElement('button', 'ctrl-btn icon-btn slower', { title: 'Slower' });
         slowerBtn.appendChild(createDecreaseSpeedSvg());
         
         // Speed text button with dropdown
-        const speedTextContainer = createElement('div', 'speed-text-container');
-        speedText = createElement('button', 'btn speed-text', { title: 'Select speed' }, '1.0x');
+        const speedTextContainer = createElement('div', 'text-container');
+        speedTextContainer.style.position = 'relative';
+        speedText = createElement('button', 'ctrl-btn text-btn speed-text', { title: 'Select speed' }, '1.0x');
         speedSelect = createElement('div', 'dropdown speed-select');
         SPEEDS.forEach(s => {
             const opt = createElement('div', 'dropdown-option speed-option', { 'data-value': s }, s + 'x');
@@ -660,21 +615,22 @@ background: rgba(255, 255, 255, 0.15);
         speedTextContainer.appendChild(speedText);
         speedTextContainer.appendChild(speedSelect);
         
-        fasterBtn = createElement('button', 'btn btn-icon faster', { title: 'Faster' });
+        fasterBtn = createElement('button', 'ctrl-btn icon-btn faster', { title: 'Faster' });
         fasterBtn.appendChild(createIncreaseSpeedSvg());
         speedCombo.appendChild(slowerBtn);
         speedCombo.appendChild(speedTextContainer);
         speedCombo.appendChild(fasterBtn);
         controlsWrapper.appendChild(speedCombo);
         
-        // Hide combo (split button: [🙈] [🔼])
-        const hideCombo = createElement('div', 'hide-combo');
-        hideBtn = createElement('button', 'btn btn-icon hide-btn', { title: 'Hide controls' });
+        // Hide combo (pill container with two buttons)
+        const hideCombo = createElement('div', 'ctrl-container pill-container hide-combo');
+        hideBtn = createElement('button', 'ctrl-btn icon-btn hide-btn', { title: 'Hide controls' });
         hideBtn.appendChild(createHideSvg());
         
         // Dropdown trigger button
-        const hideTextContainer = createElement('div', 'hide-text-container');
-        const hideDropdownBtn = createElement('button', 'btn hide-dropdown-btn', { title: 'Hide duration options' });
+        const hideTextContainer = createElement('div', 'text-container');
+        hideTextContainer.style.position = 'relative';
+        const hideDropdownBtn = createElement('button', 'ctrl-btn icon-btn hide-dropdown-btn', { title: 'Hide duration options' });
         hideDropdownBtn.appendChild(createHamburgerSvg());
         hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
@@ -688,11 +644,14 @@ background: rgba(255, 255, 255, 0.15);
         hideCombo.appendChild(hideTextContainer);
         controlsWrapper.appendChild(hideCombo);
         
-        // Kebab menu
-        kebabBtn = createElement('button', 'btn kebab-btn', { title: 'More options' });
+        // Kebab menu (single button, hidden by default)
+        kebabContainer = createElement('div', 'ctrl-container circle-container kebab-container');
+        kebabContainer.style.display = 'none';
+        kebabBtn = createElement('button', 'ctrl-btn icon-btn kebab-btn', { title: 'More options' });
         kebabBtn.appendChild(createHamburgerSvg());
+        kebabContainer.appendChild(kebabBtn);
         kebabMenu = createElement('div', 'dropdown kebab-menu');
-        controlsWrapper.appendChild(kebabBtn);
+        controlsWrapper.appendChild(kebabContainer);
         controlsWrapper.appendChild(kebabMenu);
         
         controlBarDiv.appendChild(controlsWrapper);
@@ -792,7 +751,7 @@ background: rgba(255, 255, 255, 0.15);
         // Hide controls - main button (default 5s)
         hideBtn.addEventListener('click', () => hideControlBar(5));
         
-        // Hide dropdown toggle (🔼 button)
+        // Hide dropdown toggle
         const hideDropdownBtn = shadowRoot.querySelector('.hide-dropdown-btn');
         hideDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -971,20 +930,15 @@ background: rgba(255, 255, 255, 0.15);
     function createPlaySvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '20');
-        svg.setAttribute('height', '20');
-        svg.setAttribute('viewBox', '0 0 210 200');
+        // svg.setAttribute('width', '20');
+        // svg.setAttribute('height', '20');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
-        const rect = document.createElementNS(ns, 'rect');
-        rect.setAttribute('width', '210');
-        rect.setAttribute('height', '200');
-        g.appendChild(rect);
-
         const innerG = document.createElementNS(ns, 'g');
-        innerG.setAttribute('transform', 'translate(19 0)');
+        innerG.setAttribute('transform', 'translate(114 100)');
 
         const path1 = document.createElementNS(ns, 'path');
         path1.setAttribute('d', 'M0 26L0 166.001L45.0001 192L174 123L174 69L45 0L0 26Z');
@@ -1021,30 +975,28 @@ background: rgba(255, 255, 255, 0.15);
     function createPauseSvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '20');
-        svg.setAttribute('height', '20');
-        svg.setAttribute('viewBox', '0 0 210 200');
+        // svg.setAttribute('width', '20');
+        // svg.setAttribute('height', '20');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
-        const rect = document.createElementNS(ns, 'rect');
-        rect.setAttribute('width', '210');
-        rect.setAttribute('height', '200');
-        g.appendChild(rect);
+        const innerG = document.createElementNS(ns, 'g');
+        innerG.setAttribute('transform', 'translate(114 100)');
 
         const path1 = document.createElementNS(ns, 'path');
         path1.setAttribute('d', 'M30 0C46.5708 0 60 13.4292 60 30L60 170C60 186.571 46.5708 200 30 200L30 200C13.4292 200 0 186.571 0 170L0 30C0 13.4292 13.4292 0 30 0Z');
         path1.setAttribute('fill', '#FFFFFF');
-        path1.setAttribute('transform', 'translate(19 0)');
-        g.appendChild(path1);
+        innerG.appendChild(path1);
 
         const path2 = document.createElementNS(ns, 'path');
         path2.setAttribute('d', 'M30 0C46.5708 0 60 13.4292 60 30L60 170C60 186.571 46.5708 200 30 200L30 200C13.4292 200 0 186.571 0 170L0 30C0 13.4292 13.4292 0 30 0Z');
         path2.setAttribute('fill', '#FFFFFF');
-        path2.setAttribute('transform', 'translate(131 0)');
-        g.appendChild(path2);
+        path2.setAttribute('transform', 'translate(112 0)');
+        innerG.appendChild(path2);
 
+        g.appendChild(innerG);
         svg.appendChild(g);
         return svg;
     }
@@ -1052,42 +1004,41 @@ background: rgba(255, 255, 255, 0.15);
     function createDecreaseSpeedSvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '24');
-        svg.setAttribute('height', '24');
-        svg.setAttribute('viewBox', '0 0 300 300');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
         // Main background circle (star shape)
         const path1 = document.createElementNS(ns, 'path');
-        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.462 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9626C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67499 177.732 0.0126648 150.069 3.05176e-05C122.405 -0.0126343 95.2771 7.62488 71.6836 22.0681C48.0903 36.5114 28.9504 57.1978 16.3801 81.8403C3.81006 106.483 -1.70093 134.121 0.457031 161.7C2.22632 184.313 9.09448 206.164 20.4683 225.641C24.6174 232.746 34.0054 234.194 40.6643 229.361C40.719 229.321 40.7739 229.281 40.8286 229.241C47.4875 224.408 48.8755 215.127 44.9041 207.921C36.6829 193.004 31.7031 176.454 30.3657 159.36C28.6394 137.297 33.0481 115.186 43.1042 95.4722C53.1604 75.7582 68.4722 59.2091 87.3469 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7119C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.272 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
+        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.463 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9626C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67498 177.732 0.012661 150.069 1.90735e-05C122.405 -0.0126419 95.2772 7.62488 71.6837 22.0681C48.0902 36.5114 28.9504 57.1978 16.3802 81.8403C3.81002 106.483 -1.70081 134.121 0.457012 161.7C2.22628 184.313 9.09458 206.164 20.4682 225.641C24.6174 232.746 34.0053 234.194 40.6642 229.361C40.719 229.321 40.7738 229.281 40.8286 229.241C47.4875 224.408 48.8756 215.127 44.9041 207.921C36.6828 193.004 31.7031 176.454 30.3656 159.36C28.6394 137.297 33.048 115.186 43.1042 95.4722C53.1603 75.7582 68.4722 59.2091 87.347 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7119C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.273 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
         path1.setAttribute('fill', '#FFFFFF');
         path1.setAttribute('fill-rule', 'evenodd');
+        path1.setAttribute('transform', 'translate(50 50)');
         g.appendChild(path1);
 
-        // Triangle
+        // Triangle (pointing left)
         const path2 = document.createElementNS(ns, 'path');
-        path2.setAttribute('d', 'M0 18.0815L51.946 96.0001L95.946 52.0001L17.9458 0L0 18.0815Z');
+        path2.setAttribute('d', 'M0 18.0815L51.946 96.0002L95.9459 52.0001L17.9458 0L0 18.0815Z');
         path2.setAttribute('fill', '#FFFFFF');
         path2.setAttribute('fill-rule', 'evenodd');
-        path2.setAttribute('transform', 'translate(75 75)');
+        path2.setAttribute('transform', 'translate(125 125)');
         g.appendChild(path2);
 
         // Dot 1
         const path3 = document.createElementNS(ns, 'path');
-        path3.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path3.setAttribute('d', 'M0 13C0 5.8203 5.82028 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82028 26 0 20.1797 0 13Z');
         path3.setAttribute('fill', '#FFFFFF');
         path3.setAttribute('fill-rule', 'evenodd');
-        path3.setAttribute('transform', 'matrix(1 0 -0 1 201 73)');
+        path3.setAttribute('transform', 'matrix(1 0 -0 1 251 123)');
         g.appendChild(path3);
 
         // Dot 2
         const path4 = document.createElementNS(ns, 'path');
-        path4.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path4.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path4.setAttribute('fill', '#FFFFFF');
         path4.setAttribute('fill-rule', 'evenodd');
-        path4.setAttribute('transform', 'matrix(1 0 -0 1 73 73)');
+        path4.setAttribute('transform', 'matrix(1 0 -0 1 123 123)');
         g.appendChild(path4);
 
         // Large circle
@@ -1095,7 +1046,7 @@ background: rgba(255, 255, 255, 0.15);
         path5.setAttribute('d', 'M0 31C0 13.8792 13.8792 0 31 0C48.1208 0 62 13.8792 62 31C62 48.1208 48.1208 62 31 62C13.8792 62 0 48.1208 0 31Z');
         path5.setAttribute('fill', '#FFFFFF');
         path5.setAttribute('fill-rule', 'evenodd');
-        path5.setAttribute('transform', 'translate(119 119)');
+        path5.setAttribute('transform', 'translate(169 169)');
         g.appendChild(path5);
 
         // Dot 3
@@ -1103,34 +1054,34 @@ background: rgba(255, 255, 255, 0.15);
         path6.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
         path6.setAttribute('fill', '#FFFFFF');
         path6.setAttribute('fill-rule', 'evenodd');
-        path6.setAttribute('transform', 'translate(227 137)');
+        path6.setAttribute('transform', 'translate(277 187)');
         g.appendChild(path6);
 
         // Dot 4
         const path7 = document.createElementNS(ns, 'path');
-        path7.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path7.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path7.setAttribute('fill', '#FFFFFF');
         path7.setAttribute('fill-rule', 'evenodd');
-        path7.setAttribute('transform', 'translate(137 47)');
+        path7.setAttribute('transform', 'translate(187 97)');
         g.appendChild(path7);
 
         // Dot 5
         const path8 = document.createElementNS(ns, 'path');
-        path8.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path8.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path8.setAttribute('fill', '#FFFFFF');
         path8.setAttribute('fill-rule', 'evenodd');
-        path8.setAttribute('transform', 'translate(47 137)');
+        path8.setAttribute('transform', 'translate(97 187)');
         g.appendChild(path8);
 
-        // <<< symbol
+        // <<< symbol group
         const xGroup = document.createElementNS(ns, 'g');
-        xGroup.setAttribute('transform', 'translate(69 228)');
+        xGroup.setAttribute('transform', 'translate(156 278)');
 
         const line1 = document.createElementNS(ns, 'line');
         line1.setAttribute('x1', '0');
         line1.setAttribute('y1', '0');
-        line1.setAttribute('x2', '28.284');
-        line1.setAttribute('y2', '35.355');
+        line1.setAttribute('x2', '28.2843');
+        line1.setAttribute('y2', '28.2843');
         line1.setAttribute('fill', 'none');
         line1.setAttribute('stroke', '#FFFFFF');
         line1.setAttribute('stroke-width', '30');
@@ -1140,8 +1091,8 @@ background: rgba(255, 255, 255, 0.15);
 
         const line2 = document.createElementNS(ns, 'line');
         line2.setAttribute('x1', '0');
-        line2.setAttribute('y1', '35.355');
-        line2.setAttribute('x2', '28.284');
+        line2.setAttribute('y1', '28.2843');
+        line2.setAttribute('x2', '28.2843');
         line2.setAttribute('y2', '0');
         line2.setAttribute('fill', 'none');
         line2.setAttribute('stroke', '#FFFFFF');
@@ -1152,19 +1103,19 @@ background: rgba(255, 255, 255, 0.15);
         const line3 = document.createElementNS(ns, 'line');
         line3.setAttribute('x1', '0');
         line3.setAttribute('y1', '0');
-        line3.setAttribute('x2', '28.284');
-        line3.setAttribute('y2', '35.355');
+        line3.setAttribute('x2', '28.2843');
+        line3.setAttribute('y2', '28.2843');
         line3.setAttribute('fill', 'none');
         line3.setAttribute('stroke', '#FFFFFF');
         line3.setAttribute('stroke-width', '30');
         line3.setAttribute('stroke-linecap', 'round');
-        line3.setAttribute('transform', 'translate(60 27.929)');
+        line3.setAttribute('transform', 'translate(60 28)');
         xGroup.appendChild(line3);
 
         const line4 = document.createElementNS(ns, 'line');
         line4.setAttribute('x1', '0');
-        line4.setAttribute('y1', '35.355');
-        line4.setAttribute('x2', '28.284');
+        line4.setAttribute('y1', '28.2843');
+        line4.setAttribute('x2', '28.2843');
         line4.setAttribute('y2', '0');
         line4.setAttribute('fill', 'none');
         line4.setAttribute('stroke', '#FFFFFF');
@@ -1172,30 +1123,6 @@ background: rgba(255, 255, 255, 0.15);
         line4.setAttribute('stroke-linecap', 'round');
         line4.setAttribute('transform', 'translate(60 0)');
         xGroup.appendChild(line4);
-
-        const line5 = document.createElementNS(ns, 'line');
-        line5.setAttribute('x1', '0');
-        line5.setAttribute('y1', '0');
-        line5.setAttribute('x2', '28.284');
-        line5.setAttribute('y2', '35.355');
-        line5.setAttribute('fill', 'none');
-        line5.setAttribute('stroke', '#FFFFFF');
-        line5.setAttribute('stroke-width', '30');
-        line5.setAttribute('stroke-linecap', 'round');
-        line5.setAttribute('transform', 'translate(120 28)');
-        xGroup.appendChild(line5);
-
-        const line6 = document.createElementNS(ns, 'line');
-        line6.setAttribute('x1', '0');
-        line6.setAttribute('y1', '35.355');
-        line6.setAttribute('x2', '28.284');
-        line6.setAttribute('y2', '0');
-        line6.setAttribute('fill', 'none');
-        line6.setAttribute('stroke', '#FFFFFF');
-        line6.setAttribute('stroke-width', '30');
-        line6.setAttribute('stroke-linecap', 'round');
-        line6.setAttribute('transform', 'translate(120 0)');
-        xGroup.appendChild(line6);
 
         g.appendChild(xGroup);
 
@@ -1206,50 +1133,49 @@ background: rgba(255, 255, 255, 0.15);
     function createIncreaseSpeedSvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '24');
-        svg.setAttribute('height', '24');
-        svg.setAttribute('viewBox', '0 0 300 300');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
-        // Main background circle
+        // Main background circle (star shape)
         const path1 = document.createElementNS(ns, 'path');
-        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.462 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9625C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67498 177.732 0.012661 150.068 1.90735e-05C122.405 -0.0126419 95.2773 7.62488 71.6836 22.0681C48.0903 36.5114 28.9502 57.1978 16.3804 81.8403C3.81006 106.483 -1.70068 134.121 0.457031 161.7C2.22607 184.313 9.09473 206.164 20.4683 225.641C24.6172 232.746 34.0054 234.194 40.6641 229.361C40.7192 229.321 40.7739 229.281 40.8286 229.241C47.4873 224.408 48.8755 215.127 44.9043 207.921C36.6826 193.004 31.7031 176.454 30.3657 159.36C28.6392 137.297 33.0479 115.186 43.104 95.4722C53.1602 75.7582 68.4722 59.2091 87.3472 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7118C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.272 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
+        path1.setAttribute('d', 'M259.099 229.341C259.154 229.381 259.208 229.421 259.263 229.461C265.917 234.301 275.307 232.861 279.463 225.759C290.854 206.293 297.742 184.449 299.532 161.837C301.715 134.26 296.23 106.617 283.682 81.9626C271.134 57.3086 252.014 36.6047 228.433 22.1398C204.853 7.67498 177.732 0.012661 150.069 1.90735e-05C122.405 -0.0126419 95.2772 7.62488 71.6837 22.0681C48.0902 36.5114 28.9504 57.1978 16.3802 81.8403C3.81002 106.483 -1.70081 134.121 0.457012 161.7C2.22628 184.313 9.09458 206.164 20.4682 225.641C24.6174 232.746 34.0053 234.194 40.6642 229.361C40.719 229.321 40.7738 229.281 40.8286 229.241C47.4875 224.408 48.8756 215.127 44.9041 207.921C36.6828 193.004 31.7031 176.454 30.3656 159.36C28.6394 137.297 33.048 115.186 43.1042 95.4722C53.1603 75.7582 68.4722 59.2091 87.347 47.6545C106.222 36.0999 127.924 29.9899 150.055 30C172.186 30.0101 193.882 36.14 212.747 47.7119C231.611 59.2837 246.908 75.8469 256.946 95.57C266.984 115.293 271.372 137.408 269.626 159.47C268.273 176.563 263.278 193.108 255.043 208.017C251.065 215.22 252.444 224.502 259.099 229.341Z');
         path1.setAttribute('fill', '#FFFFFF');
         path1.setAttribute('fill-rule', 'evenodd');
+        path1.setAttribute('transform', 'translate(50 50)');
         g.appendChild(path1);
 
-        // Triangle
+        // Triangle (pointing right - rotated)
         const path2 = document.createElementNS(ns, 'path');
-        path2.setAttribute('d', 'M0 18.0815L51.9463 96.0002L95.9463 52.0002L17.9453 0L0 18.0815Z');
+        path2.setAttribute('d', 'M-1.52588e-05 18.0815L51.9459 96.0001L95.9459 52.0001L17.9458 0L-1.52588e-05 18.0815Z');
         path2.setAttribute('fill', '#FFFFFF');
         path2.setAttribute('fill-rule', 'evenodd');
-        path2.setAttribute('transform', 'matrix(-0.707 0.707 -0.707 -0.707 255 150)');
+        path2.setAttribute('transform', 'matrix(-0.707 0.707 -0.707 -0.707 305 200)');
         g.appendChild(path2);
 
         // Dot 1
         const path3 = document.createElementNS(ns, 'path');
-        path3.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 9.53674e-07 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path3.setAttribute('d', 'M0 13C0 5.8203 5.82028 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82028 26 0 20.1797 0 13Z');
         path3.setAttribute('fill', '#FFFFFF');
         path3.setAttribute('fill-rule', 'evenodd');
-        path3.setAttribute('transform', 'matrix(1 0 -0 1 201 73)');
+        path3.setAttribute('transform', 'matrix(1 0 -0 1 251 123)');
         g.appendChild(path3);
 
         // Dot 2
         const path4 = document.createElementNS(ns, 'path');
-        path4.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 9.53674e-07 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path4.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path4.setAttribute('fill', '#FFFFFF');
         path4.setAttribute('fill-rule', 'evenodd');
-        path4.setAttribute('transform', 'matrix(1 0 -0 1 73 73)');
+        path4.setAttribute('transform', 'matrix(1 0 -0 1 123 123)');
         g.appendChild(path4);
 
         // Large circle
         const path5 = document.createElementNS(ns, 'path');
-        path5.setAttribute('d', 'M0 31C0 13.8792 13.8794 0 31 0C48.1206 0 62 13.8792 62 31C62 48.1208 48.1206 62 31 62C13.8794 62 0 48.1208 0 31Z');
+        path5.setAttribute('d', 'M0 31C0 13.8792 13.8792 0 31 0C48.1208 0 62 13.8792 62 31C62 48.1208 48.1208 62 31 62C13.8792 62 0 48.1208 0 31Z');
         path5.setAttribute('fill', '#FFFFFF');
         path5.setAttribute('fill-rule', 'evenodd');
-        path5.setAttribute('transform', 'translate(119 119)');
+        path5.setAttribute('transform', 'translate(169 169)');
         g.appendChild(path5);
 
         // Dot 3
@@ -1257,34 +1183,34 @@ background: rgba(255, 255, 255, 0.15);
         path6.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
         path6.setAttribute('fill', '#FFFFFF');
         path6.setAttribute('fill-rule', 'evenodd');
-        path6.setAttribute('transform', 'translate(227 137)');
+        path6.setAttribute('transform', 'translate(277 187)');
         g.appendChild(path6);
 
         // Dot 4
         const path7 = document.createElementNS(ns, 'path');
-        path7.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path7.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path7.setAttribute('fill', '#FFFFFF');
         path7.setAttribute('fill-rule', 'evenodd');
-        path7.setAttribute('transform', 'translate(137 47)');
+        path7.setAttribute('transform', 'translate(187 97)');
         g.appendChild(path7);
 
         // Dot 5
         const path8 = document.createElementNS(ns, 'path');
-        path8.setAttribute('d', 'M0 13C0 5.8203 5.82031 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.82031 26 0 20.1797 0 13Z');
+        path8.setAttribute('d', 'M0 13C0 5.8203 5.8203 0 13 0C20.1797 0 26 5.8203 26 13C26 20.1797 20.1797 26 13 26C5.8203 26 0 20.1797 0 13Z');
         path8.setAttribute('fill', '#FFFFFF');
         path8.setAttribute('fill-rule', 'evenodd');
-        path8.setAttribute('transform', 'translate(47 137)');
+        path8.setAttribute('transform', 'translate(97 187)');
         g.appendChild(path8);
 
-        // >>> symbol group
+        // >>> symbol group (mirrored)
         const xGroup = document.createElementNS(ns, 'g');
-        xGroup.setAttribute('transform', 'matrix(-1 0 0 1 231 228)');
+        xGroup.setAttribute('transform', 'matrix(-1 0 0 1 245 278)');
 
         const line1 = document.createElementNS(ns, 'line');
         line1.setAttribute('x1', '0');
         line1.setAttribute('y1', '0');
-        line1.setAttribute('x2', '28.284');
-        line1.setAttribute('y2', '28.284');
+        line1.setAttribute('x2', '28.2843');
+        line1.setAttribute('y2', '28.2843');
         line1.setAttribute('fill', 'none');
         line1.setAttribute('stroke', '#FFFFFF');
         line1.setAttribute('stroke-width', '30');
@@ -1294,8 +1220,8 @@ background: rgba(255, 255, 255, 0.15);
 
         const line2 = document.createElementNS(ns, 'line');
         line2.setAttribute('x1', '0');
-        line2.setAttribute('y1', '28.284');
-        line2.setAttribute('x2', '28.284');
+        line2.setAttribute('y1', '28.2843');
+        line2.setAttribute('x2', '28.2843');
         line2.setAttribute('y2', '0');
         line2.setAttribute('fill', 'none');
         line2.setAttribute('stroke', '#FFFFFF');
@@ -1306,8 +1232,8 @@ background: rgba(255, 255, 255, 0.15);
         const line3 = document.createElementNS(ns, 'line');
         line3.setAttribute('x1', '0');
         line3.setAttribute('y1', '0');
-        line3.setAttribute('x2', '28.284');
-        line3.setAttribute('y2', '28.284');
+        line3.setAttribute('x2', '28.2843');
+        line3.setAttribute('y2', '28.2843');
         line3.setAttribute('fill', 'none');
         line3.setAttribute('stroke', '#FFFFFF');
         line3.setAttribute('stroke-width', '30');
@@ -1317,8 +1243,8 @@ background: rgba(255, 255, 255, 0.15);
 
         const line4 = document.createElementNS(ns, 'line');
         line4.setAttribute('x1', '0');
-        line4.setAttribute('y1', '28.284');
-        line4.setAttribute('x2', '28.284');
+        line4.setAttribute('y1', '28.2843');
+        line4.setAttribute('x2', '28.2843');
         line4.setAttribute('y2', '0');
         line4.setAttribute('fill', 'none');
         line4.setAttribute('stroke', '#FFFFFF');
@@ -1326,30 +1252,6 @@ background: rgba(255, 255, 255, 0.15);
         line4.setAttribute('stroke-linecap', 'round');
         line4.setAttribute('transform', 'translate(60 0)');
         xGroup.appendChild(line4);
-
-        const line5 = document.createElementNS(ns, 'line');
-        line5.setAttribute('x1', '0');
-        line5.setAttribute('y1', '0');
-        line5.setAttribute('x2', '28.284');
-        line5.setAttribute('y2', '28.284');
-        line5.setAttribute('fill', 'none');
-        line5.setAttribute('stroke', '#FFFFFF');
-        line5.setAttribute('stroke-width', '30');
-        line5.setAttribute('stroke-linecap', 'round');
-        line5.setAttribute('transform', 'translate(120 28)');
-        xGroup.appendChild(line5);
-
-        const line6 = document.createElementNS(ns, 'line');
-        line6.setAttribute('x1', '0');
-        line6.setAttribute('y1', '28.284');
-        line6.setAttribute('x2', '28.284');
-        line6.setAttribute('y2', '0');
-        line6.setAttribute('fill', 'none');
-        line6.setAttribute('stroke', '#FFFFFF');
-        line6.setAttribute('stroke-width', '30');
-        line6.setAttribute('stroke-linecap', 'round');
-        line6.setAttribute('transform', 'translate(120 0)');
-        xGroup.appendChild(line6);
 
         g.appendChild(xGroup);
 
@@ -1360,32 +1262,30 @@ background: rgba(255, 255, 255, 0.15);
     function createHideSvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '24');
-        svg.setAttribute('height', '24');
-        svg.setAttribute('viewBox', '0 0 300 260');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
-        // Eye shape path
+        // Eye path
         const path1 = document.createElementNS(ns, 'path');
-        path1.setAttribute('d', 'M223.291 20.4965Q184.575 0 150 0Q103.132 0 48.6572 37.6616Q22.1152 56.0118 4.20215 74.588Q3.97634 74.8222 3.7609 75.0659Q3.54546 75.3097 3.34079 75.5625Q3.13612 75.8154 2.94261 76.0769Q2.74909 76.3384 2.56709 76.608Q2.3851 76.8777 2.21496 77.1549Q2.04483 77.4322 1.88687 77.7166Q1.72892 78.001 1.58344 78.292Q1.43796 78.583 1.30524 78.88Q1.17251 79.177 1.05279 79.4795Q0.933065 79.782 0.826567 80.0893Q0.72007 80.3967 0.626999 80.7085Q0.533928 81.0202 0.454459 81.3356Q0.37499 81.6511 0.309272 81.9697Q0.243554 82.2883 0.191711 82.6095Q0.139868 82.9307 0.101997 83.2538Q0.0641258 83.5769 0.0402983 83.9013Q0.0164708 84.2258 0.00673152 84.5509Q-0.00300773 84.8761 0.00135959 85.2014Q0.00572691 85.5267 0.0241926 85.8515Q0.0426583 86.1763 0.0751876 86.5Q0.107717 86.8237 0.154249 87.1457Q0.20078 87.4676 0.261227 87.7873Q0.321674 88.1069 0.395922 88.4237Q0.47017 88.7404 0.55808 89.0536Q0.645989 89.3668 0.747395 89.6759Q0.848801 89.985 0.963513 90.2895Q1.07822 90.5939 1.20603 90.8931Q1.33383 91.1922 1.47448 91.4855Q1.61513 91.7789 1.76837 92.0659Q1.9216 92.3528 2.08713 92.6329Q2.25267 92.9129 2.43019 93.1855Q2.6077 93.4582 2.79688 93.7228Q3.43945 94.6218 4.20703 95.4169L4.21094 95.421Q22.1216 113.993 48.6572 132.338Q69.105 146.475 88.4814 155.306L111.406 132.381Q89.7891 124.303 65.7178 107.662Q49.252 96.278 36.6411 85Q49.252 73.722 65.7178 62.3384Q89.9663 45.5738 111.724 37.5002C97.8652 48.6821 89 65.8058 89 85C89 104.083 97.7622 121.118 111.483 132.304L197.304 46.4829C194.615 43.1845 191.588 40.1727 188.275 37.5002Q194.509 39.8133 200.947 42.8397L223.291 20.4965ZM228.061 58.153L249.688 36.5252Q250.514 37.0888 251.343 37.6616Q277.885 56.0118 295.798 74.588Q296.048 74.8469 296.285 75.1175Q296.521 75.3881 296.745 75.6697Q296.969 75.9514 297.179 76.2434Q297.389 76.5355 297.585 76.8373Q297.78 77.1391 297.962 77.4499Q298.143 77.7607 298.309 78.0798Q298.474 78.399 298.625 78.7257Q298.775 79.0524 298.91 79.386Q299.045 79.7195 299.163 80.0592Q299.282 80.3988 299.384 80.7437Q299.486 81.0886 299.571 81.438Q299.657 81.7875 299.725 82.1406Q299.794 82.4937 299.845 82.8497Q299.897 83.2057 299.931 83.5637Q299.966 83.9218 299.983 84.281Q300 84.6403 300 85Q300 85.3597 299.983 85.719Q299.966 86.0783 299.931 86.4364Q299.897 86.7944 299.845 87.1504Q299.794 87.5064 299.725 87.8595Q299.657 88.2126 299.571 88.562Q299.486 88.9115 299.384 89.2564Q299.282 89.6013 299.163 89.9409Q299.045 90.2806 298.91 90.6141Q298.775 90.9477 298.625 91.2744Q298.474 91.6011 298.309 91.9203Q298.143 92.2394 297.961 92.5502Q297.78 92.861 297.585 93.1628Q297.389 93.4646 297.179 93.7566Q296.969 94.0487 296.745 94.3303Q296.521 94.612 296.285 94.8826Q296.048 95.1532 295.798 95.4121L295.763 95.448L295.754 95.4574Q277.853 114.011 251.343 132.338Q196.868 170 150 170Q135.326 170 119.905 166.308L210.324 75.8891C210.77 78.8614 211 81.9037 211 85C211 104.194 202.135 121.318 188.276 132.5Q210.034 124.426 234.282 107.662Q250.748 96.278 263.359 85Q250.748 73.722 234.282 62.3384Q231.15 60.1731 228.061 58.153Z');
+        path1.setAttribute('d', 'M223.29 20.4965Q184.575 0 150 0Q103.132 0 48.6573 37.6616Q22.115 56.0118 4.20234 74.588Q3.97652 74.8222 3.76107 75.0659Q3.54562 75.3097 3.34094 75.5625Q3.13626 75.8154 2.94273 76.0769Q2.74921 76.3384 2.5672 76.608Q2.3852 76.8777 2.21505 77.1549Q2.04491 77.4322 1.88695 77.7166Q1.72899 78.001 1.5835 78.292Q1.43802 78.583 1.30529 78.88Q1.17256 79.177 1.05283 79.4795Q0.933097 79.782 0.826595 80.0893Q0.720092 80.3967 0.627017 80.7085Q0.533942 81.0202 0.45447 81.3356Q0.374997 81.6511 0.309276 81.9697Q0.243556 82.2883 0.19171 82.6095Q0.139865 82.9307 0.101992 83.2538Q0.06412 83.5769 0.0402917 83.9013Q0.0164634 84.2258 0.00672404 84.5509Q-0.00301529 84.8761 0.00135264 85.2014Q0.00572057 85.5267 0.0241876 85.8515Q0.0426545 86.1763 0.0751859 86.5Q0.107717 86.8237 0.154252 87.1457Q0.200786 87.4676 0.261236 87.7873Q0.321686 88.1069 0.395938 88.4237Q0.47019 88.7404 0.558105 89.0536Q0.646019 89.3668 0.747431 89.6759Q0.848842 89.985 0.963559 90.2895Q1.07828 90.5939 1.20609 90.8931Q1.33389 91.1922 1.47455 91.4855Q1.61521 91.7789 1.76845 92.0659Q1.9217 92.3528 2.08724 92.6329Q2.25278 92.9129 2.43031 93.1855Q2.60784 93.4582 2.79702 93.7228Q3.43963 94.6218 4.20705 95.4169L4.21098 95.421Q22.1215 113.993 48.6573 132.338Q69.1052 146.475 88.4813 155.306L111.406 132.381Q89.7889 124.303 65.7177 107.662Q49.2521 96.278 36.6409 85Q49.2521 73.722 65.7177 62.3384Q89.9664 45.5738 111.724 37.5002C97.8652 48.6821 89 65.8058 89 85C89 104.083 97.7623 121.118 111.483 132.304L197.304 46.4829C194.615 43.1845 191.588 40.1727 188.276 37.5002Q194.509 39.8133 200.947 42.8397L223.29 20.4965ZM228.06 58.153L249.688 36.5252Q250.514 37.0888 251.343 37.6616Q277.885 56.0118 295.798 74.588Q296.047 74.8469 296.284 75.1175Q296.521 75.3881 296.745 75.6697Q296.969 75.9514 297.179 76.2434Q297.389 76.5355 297.585 76.8373Q297.78 77.1391 297.961 77.4499Q298.142 77.7607 298.308 78.0798Q298.474 78.399 298.625 78.7257Q298.775 79.0524 298.91 79.386Q299.045 79.7195 299.163 80.0592Q299.282 80.3988 299.384 80.7437Q299.486 81.0886 299.571 81.438Q299.656 81.7875 299.725 82.1406Q299.794 82.4937 299.845 82.8497Q299.897 83.2057 299.931 83.5637Q299.966 83.9218 299.983 84.281Q300 84.6403 300 85Q300 85.3597 299.983 85.719Q299.966 86.0783 299.931 86.4364Q299.897 86.7944 299.845 87.1504Q299.794 87.5064 299.725 87.8595Q299.656 88.2126 299.571 88.562Q299.486 88.9115 299.384 89.2564Q299.282 89.6013 299.163 89.9409Q299.045 90.2806 298.91 90.6141Q298.775 90.9477 298.625 91.2744Q298.474 91.6011 298.308 91.9203Q298.142 92.2394 297.961 92.5502Q297.78 92.861 297.585 93.1628Q297.389 93.4646 297.179 93.7566Q296.969 94.0487 296.745 94.3303Q296.521 94.612 296.284 94.8826Q296.047 95.1532 295.798 95.4121L295.763 95.448L295.754 95.4574Q277.853 114.011 251.343 132.338Q196.868 170 150 170Q135.326 170 119.905 166.308L210.324 75.8891C210.769 78.8614 211 81.9037 211 85C211 104.194 202.135 121.318 188.276 132.5Q210.034 124.426 234.282 107.662Q250.748 96.278 263.359 85Q250.748 73.722 234.282 62.3384Q231.15 60.1731 228.06 58.153Z');
         path1.setAttribute('fill', '#FFFFFF');
         path1.setAttribute('fill-rule', 'evenodd');
-        path1.setAttribute('transform', 'translate(0 45)');
+        path1.setAttribute('transform', 'translate(50 115)');
         g.appendChild(path1);
 
-        // Diagonal strike-through line
+        // Strike-through line
         const line1 = document.createElementNS(ns, 'line');
         line1.setAttribute('x1', '0');
-        line1.setAttribute('y1', '230');
-        line1.setAttribute('x2', '230');
+        line1.setAttribute('y1', '191');
+        line1.setAttribute('x2', '191');
         line1.setAttribute('y2', '0');
         line1.setAttribute('fill', 'none');
         line1.setAttribute('stroke', '#FFFFFF');
         line1.setAttribute('stroke-width', '30');
         line1.setAttribute('stroke-linecap', 'round');
-        line1.setAttribute('transform', 'translate(35 15)');
+        line1.setAttribute('transform', 'translate(104.5 104.5)');
         g.appendChild(line1);
 
         svg.appendChild(g);
@@ -1395,32 +1295,31 @@ background: rgba(255, 255, 255, 0.15);
     function createHamburgerSvg() {
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width', '20');
-        svg.setAttribute('height', '20');
-        svg.setAttribute('viewBox', '0 0 60 240');
+        svg.setAttribute('viewBox', '0 0 400 400');
         svg.setAttribute('fill', 'none');
 
         const g = document.createElementNS(ns, 'g');
 
-        // Three circles stacked vertically (hamburger menu style)
+        // Three circles stacked vertically
         const circle1 = document.createElementNS(ns, 'path');
-        circle1.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle1.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
         circle1.setAttribute('fill', '#FFFFFF');
         circle1.setAttribute('fill-rule', 'evenodd');
+        circle1.setAttribute('transform', 'translate(170 80)');
         g.appendChild(circle1);
 
         const circle2 = document.createElementNS(ns, 'path');
-        circle2.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle2.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
         circle2.setAttribute('fill', '#FFFFFF');
         circle2.setAttribute('fill-rule', 'evenodd');
-        circle2.setAttribute('transform', 'translate(0 90)');
+        circle2.setAttribute('transform', 'translate(170 170)');
         g.appendChild(circle2);
 
         const circle3 = document.createElementNS(ns, 'path');
-        circle3.setAttribute('d', 'M0 30C0 13.4315 13.4316 0 30 0C46.5684 0 60 13.4315 60 30C60 46.5685 46.5684 60 30 60C13.4316 60 0 46.5685 0 30Z');
+        circle3.setAttribute('d', 'M0 30C0 13.4315 13.4315 0 30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30Z');
         circle3.setAttribute('fill', '#FFFFFF');
         circle3.setAttribute('fill-rule', 'evenodd');
-        circle3.setAttribute('transform', 'translate(0 180)');
+        circle3.setAttribute('transform', 'translate(170 260)');
         g.appendChild(circle3);
 
         svg.appendChild(g);
@@ -1475,7 +1374,7 @@ background: rgba(255, 255, 255, 0.15);
         const availableWidth = wrapper.clientWidth;
         
         // Calculate required width for all buttons (excluding progress-hit-area which is fixed position)
-        const buttons = wrapper.querySelectorAll('.btn, .speed-combo, .time-display');
+        const buttons = wrapper.querySelectorAll('.ctrl-container, .time-display');
         let totalWidth = 0;
         
         buttons.forEach(btn => {
@@ -1533,16 +1432,22 @@ background: rgba(255, 255, 255, 0.15);
         if (hideCombo) {
             hideCombo.classList.remove('hidden');
         }
-        // Clear kebab menu and hide kebab button
+        // Clear kebab menu and hide kebab container
         kebabMenu.innerHTML = '';
-        kebabBtn.classList.remove('visible');
+        const kebabContainer = shadowRoot.querySelector('.kebab-container');
+        if (kebabContainer) {
+            kebabContainer.style.display = 'none';
+        }
     }
-
+    
     function moveHideToOverflow() {
         const hideCombo = shadowRoot.querySelector('.hide-combo');
+        const kebabContainer = shadowRoot.querySelector('.kebab-container');
         if (hideCombo && !hideCombo.classList.contains('hidden')) {
             hideCombo.classList.add('hidden');
-            kebabBtn.classList.add('visible');
+            if (kebabContainer) {
+                kebabContainer.style.display = 'flex';
+            }
             
             // Add all hide duration options to kebab menu
             // Only add if not already present
