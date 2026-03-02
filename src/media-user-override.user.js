@@ -31,7 +31,7 @@
  * - Play/Pause toggle button with dynamic icon
  * - Speed control combo: [Slower ◀◀] [Speed Text] [Faster ▶▶]
  *   - Speed text opens dropdown menu with all speed presets
- *   - Speed presets from 0.1x to 64x
+ *   - Speed presets from 0.1x to 128x
  *   - Speed persists globally across all pages
  * - High-contrast progress bar
  *   - Solid red fill for maximum visibility
@@ -61,6 +61,7 @@
  * [🙈] - Main button: Hide controls for default duration (5s)
  * [🔼] - Dropdown button: Opens menu with all duration options:
  *        • 5s, 15s, 30s, 1min, Until end
+ *        • Uses X (close) icon
  * 
  * BUTTON PRIORITY (for responsive overflow)
  * -----------------------------------------
@@ -76,7 +77,7 @@
  * 1. Time display hides first
  * 2. Hide combo overflows to kebab menu
  * When hide combo overflows to kebab menu, ALL duration options are shown:
- * [⋮] → [🙈 5s] [🙈 15s] [🙈 30s] [🙈 1min] [🙈 Until end]
+ * [⋮] → [Hide 5s] [Hide 15s] [Hide 30s] [Hide 1min] [Hide Until end]
  * 
  * EDGE CASES HANDLED
  * ------------------
@@ -155,11 +156,11 @@
         return supported;
     })();
     const HIDE_DURATIONS = [
-        { value: 5, label: '5 s' },
-        { value: 15, label: '15 s' },
-        { value: 30, label: '30 s' },
-        { value: 60, label: '1 min' },
-        { value: -1, label: 'Until video end' }
+        { value: 5, label: 'Hide 5 s' },
+        { value: 15, label: 'Hide 15 s' },
+        { value: 30, label: 'Hide 30 s' },
+        { value: 60, label: 'Hide 1 min' },
+        { value: -1, label: 'Hide until video end' }
     ];
     const MIN_DURATION = 5; // Minimum media duration in seconds to show controls
     const BUTTON_PRIORITY = {
@@ -648,7 +649,7 @@ background: yellow;
         hideDropdownBtn.appendChild(createDropdownOpenSvg());
         hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
-            const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, '🙈 ' + d.label);
+            const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, d.label);
             hideSelect.appendChild(opt);
         });
         hideTextContainer.appendChild(hideDropdownBtn);
@@ -1502,7 +1503,7 @@ background: yellow;
             // Only add if not already present
             if (kebabMenu.querySelectorAll('.dropdown-option').length === 0) {
                 HIDE_DURATIONS.forEach(d => {
-                    const hideItem = createElement('div', 'dropdown-option kebab-item', { 'data-value': d.value }, '🙈 ' + d.label);
+                    const hideItem = createElement('div', 'dropdown-option kebab-item', { 'data-value': d.value }, d.label);
                     hideItem.addEventListener('click', () => {
                         hideControlBar(d.value);
                         kebabMenu.classList.remove('visible');
