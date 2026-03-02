@@ -367,7 +367,7 @@ background: yellow;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             padding: 10px 15px;
         }
         
@@ -438,9 +438,9 @@ background: yellow;
 
         /* Text button specific */
         .text-btn {
-            padding: 8px 12px;
             min-width: 50px;
             max-width: 50px;
+            height: 40px;
             font-weight: 600;
             font-size: 14px;
         }
@@ -500,6 +500,15 @@ background: yellow;
             left: 50%;
             transform: translateX(-50%);
             min-width: 100px;
+        }
+        
+        /* Vertical separator between hideBtn and hideDropdownBtn */
+        .btn-separator {
+            width: 1px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.2);
+            align-self: center;
+            flex-shrink: 0;
         }
         
         /* Kebab menu specific */
@@ -617,8 +626,13 @@ background: yellow;
         
         fasterBtn = createElement('button', 'ctrl-btn icon-btn faster', { title: 'Faster' });
         fasterBtn.appendChild(createIncreaseSpeedSvg());
+        // Add vertical separators between speed controls
+        const speedBtnSeparator1 = createElement('span', 'btn-separator');
+        const speedBtnSeparator2 = createElement('span', 'btn-separator');
         speedCombo.appendChild(slowerBtn);
+        speedCombo.appendChild(speedBtnSeparator1);
         speedCombo.appendChild(speedTextContainer);
+        speedCombo.appendChild(speedBtnSeparator2);
         speedCombo.appendChild(fasterBtn);
         controlsWrapper.appendChild(speedCombo);
         
@@ -631,7 +645,7 @@ background: yellow;
         const hideTextContainer = createElement('div', 'text-container');
         hideTextContainer.style.position = 'relative';
         const hideDropdownBtn = createElement('button', 'ctrl-btn icon-btn hide-dropdown-btn', { title: 'Hide duration options' });
-        hideDropdownBtn.appendChild(createHamburgerSvg());
+        hideDropdownBtn.appendChild(createDropdownOpenSvg());
         hideSelect = createElement('div', 'dropdown hide-select');
         HIDE_DURATIONS.forEach(d => {
             const opt = createElement('div', 'dropdown-option hide-option', { 'data-value': d.value }, '🙈 ' + d.label);
@@ -640,7 +654,10 @@ background: yellow;
         hideTextContainer.appendChild(hideDropdownBtn);
         hideTextContainer.appendChild(hideSelect);
         
+        // Add vertical separator between hideBtn and hideDropdownBtn
+        const hideBtnSeparator = createElement('span', 'btn-separator');
         hideCombo.appendChild(hideBtn);
+        hideCombo.appendChild(hideBtnSeparator);
         hideCombo.appendChild(hideTextContainer);
         controlsWrapper.appendChild(hideCombo);
         
@@ -1287,6 +1304,38 @@ background: yellow;
         line1.setAttribute('stroke-linecap', 'round');
         line1.setAttribute('transform', 'translate(104.5 104.5)');
         g.appendChild(line1);
+
+        svg.appendChild(g);
+        return svg;
+    }
+
+    function createDropdownOpenSvg() {
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('viewBox', '0 0 400 400');
+        svg.setAttribute('fill', 'none');
+        
+        const g = document.createElementNS(ns, 'g');
+        g.setAttribute('transform', 'matrix(-1 0 0 1 271.421 156)');
+
+        // X shape - two diagonal lines
+        const line1 = document.createElementNS(ns, 'path');
+        line1.setAttribute('d', 'M70.7104 0L0 70.7108');
+        line1.setAttribute('fill', 'none');
+        line1.setAttribute('stroke', '#FFFFFF');
+        line1.setAttribute('stroke-width', '30');
+        line1.setAttribute('stroke-linecap', 'round');
+        line1.setAttribute('transform', 'translate(0 0.289)');
+        g.appendChild(line1);
+
+        const line2 = document.createElementNS(ns, 'path');
+        line2.setAttribute('d', 'M0 0L70.7106 70.7108');
+        line2.setAttribute('fill', 'none');
+        line2.setAttribute('stroke', '#FFFFFF');
+        line2.setAttribute('stroke-width', '30');
+        line2.setAttribute('stroke-linecap', 'round');
+        line2.setAttribute('transform', 'translate(70.71 0)');
+        g.appendChild(line2);
 
         svg.appendChild(g);
         return svg;
