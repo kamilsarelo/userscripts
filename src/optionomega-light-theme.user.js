@@ -2,11 +2,13 @@
 // @name         Option Omega Light Theme
 // @description  Convert Option Omega's default dark theme to light mode for better readability
 // @namespace    https://github.com/kamilsarelo
-// @version      5
+// @version      6
 // @author       kamilsarelo
 // @icon         https://optionomega.com/favicon.png
 // @match        *://optionomega.com/*
 // @match        *://*.optionomega.com/*
+// @exclude      https://docs.optionomega.com/*
+// @exclude      http://docs.optionomega.com/*
 // @grant        GM_addStyle
 // @run-at       document-start
 // ==/UserScript==
@@ -170,6 +172,46 @@
             
             /* Override dark hover state in "Test List" and "Test Trade Log" with light equivalent */
             .hover\\:bg-gray-800:hover { background-color: #e5e7eb !important; }
+
+            /*
+             * Tailwind dark-theme utility classes → light equivalents
+             *
+             * The site styles most text with Tailwind opacity variants such as
+             * text-white/45, /50, /55, /60, /70, /85 which getComputedStyle
+             * resolves to rgba(255, 255, 255, 0.x) - colors the JS color map
+             * never matches. Attribute substring selectors [class*="..."]
+             * cover every opacity variant (and unknown future ones) without
+             * escaping the "/" in class names.
+             */
+
+            /* Text: white and all white opacity variants → near-black */
+            .text-white { color: #111827 !important; }
+            [class*="text-white/"]:not([class*="hover:text-white"]) { color: #111827 !important; }
+
+            /* Text: light grays → darker grays readable on white */
+            .text-gray-100, .text-gray-200 { color: #1f2937 !important; }
+            .text-gray-300, .text-gray-400 { color: #4b5563 !important; }
+
+            /* Exception: decorative stroke icons (stepper chevrons) keep native
+               gray-300 so they stay as subtle as the border-gray-300 borders */
+            svg.text-gray-300, svg.text-gray-400 { color: #d1d5db !important; }
+
+            /* Backgrounds: black and gray surfaces → white/light gray */
+            .bg-black { background-color: #ffffff !important; }
+            [class*="bg-black/"] { background-color: #f3f4f6 !important; }
+            .bg-gray-900, .bg-gray-800, .bg-gray-700 { background-color: #e5e7eb !important; }
+
+            /* Borders: white and dark-gray borders → light gray */
+            [class*="border-white/"] { border-color: #d1d5db !important; }
+            [class*="border-gray-7"], [class*="border-gray-8"] { border-color: #d1d5db !important; }
+
+            /* Dividers: divide-* utilities place the border on children */
+            [class*="divide-white/"] > *, [class*="divide-gray-7"] > * { border-color: #e5e7eb !important; }
+
+            /* Focus rings: white rings/offsets → visible on white background */
+            .ring-white, [class*="ring-white/"] { --tw-ring-color: #9ca3af !important; }
+            .ring-offset-gray-800 { --tw-ring-offset-color: #ffffff !important; }
+
             
             /*
              * Canvas Chart Enhancement for Light Theme
