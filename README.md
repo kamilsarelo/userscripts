@@ -61,6 +61,20 @@ Then open `http://<your-local-ip>:8080` on any device in your network to see ava
 
 **Requirements:** Python 3.7+ (standard library only)
 
+### Troubleshooting
+
+**Port 8080 already in use:**
+
+Check what's using port 8080:
+```bash
+lsof -i :8080
+```
+
+Kill the process occupying the port:
+```bash
+kill $(lsof -t -i :8080)
+```
+
 ## License
 
 [MIT License](LICENSE) — feel free to use, modify, and distribute.
